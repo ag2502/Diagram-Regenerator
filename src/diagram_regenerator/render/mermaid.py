@@ -124,7 +124,12 @@ def render_mermaid(
     """
     options = options or MermaidOptions()
     keys = sorted(tables) if tables is not None else sorted(schema.tables)
-    stub_keys = sorted(set(stubs) - set(keys))
+    stubs = set(stubs)
+    if tables is None:
+        # Tables referenced but defined elsewhere (Supabase's auth.users, another
+        # service's schema) still get a box, so their relationships are drawn.
+        stubs |= {fk.ref_table for t in schema.tables.values() for fk in t.foreign_keys}
+    stub_keys = sorted(stubs - set(keys))
     shown = set(keys) | set(stub_keys)
 
     lines: list[str] = []
@@ -162,7 +167,10 @@ def render_mermaid(
 
 
 def neighbours(schema: Schema, keys: Iterable[str]) -> set[str]:
-    """Tables directly linked (either direction) to ``keys`` but not in it."""
+    """Tables directly linked (either direction) to ``keys`` but not in it.
+
+    Referenced tables the schema doesn't define (e.g. ``auth.users``) count too.
+    """
     keys = set(keys)
     found: set[str] = set()
     for key in keys:
@@ -171,4 +179,4 @@ def neighbours(schema: Schema, keys: Iterable[str]) -> set[str]:
             continue
         found.update(fk.ref_table for fk in table.foreign_keys)
         found.update(other.key for other, _ in schema.referencing(key))
-    return {key for key in found if key in schema.tables} - keys
+    return found - keys

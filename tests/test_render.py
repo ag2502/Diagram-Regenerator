@@ -162,3 +162,27 @@ def test_render_dispatch_and_format_detection():
         format_for_path("x.png")
     with pytest.raises(ValueError):
         render(schema, "png")
+
+
+def test_tables_defined_elsewhere_get_a_box():
+    from diagram_regenerator.sources.sql import replay
+
+    schema = replay(
+        [
+            (
+                "supabase.sql",
+                "create table public.profiles (user_id uuid primary key references auth.users (id));"
+                "create table public.notes (id int primary key, user_id uuid not null references auth.users (id));",
+            )
+        ]
+    ).schema
+    text = render_mermaid(schema)
+    assert_valid_mermaid_er(text)
+    assert "    auth__users\n" in text
+    assert 'auth__users ||--o| profiles : "user_id"' in text
+    assert 'auth__users ||..o{ notes : "user_id"' in text
+    assert neighbours(schema, ["notes"]) == {"auth.users"}
+    focus = render_mermaid(schema, tables=["notes"], stubs=neighbours(schema, ["notes"]))
+    assert 'auth__users ||..o{ notes : "user_id"' in focus
+    page = render_markdown(schema)
+    assert "FK → `auth.users`.`id`" in page
