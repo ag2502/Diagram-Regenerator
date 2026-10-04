@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Environments and secrets
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Local databases created while trying things out
+*.db
+*.sqlite
+*.sqlite3
+
+# Third-party sources fetched by examples/oss/fetch.py
+examples/oss/.cache/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
