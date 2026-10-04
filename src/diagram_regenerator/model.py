@@ -17,6 +17,9 @@ from typing import Any
 
 SNAPSHOT_FORMAT = "diagram-regenerator/schema@1"
 
+# Descriptions suggested by a tool (not yet reviewed by a person) start with this.
+DRAFT_PREFIX = "[draft]"
+
 # Tables that migration tools create for their own bookkeeping. They exist in a
 # live database but never in the migration files, so they would show up as
 # drift on every comparison unless they are skipped.
