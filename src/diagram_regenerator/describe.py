@@ -127,21 +127,24 @@ class HeuristicDescriber:
             draft.table = self._table(table)
         for name in wanted:
             column = table.column(name)
-            text = self._column(table, column) if column else None
+            text = self._column(table, column, schema) if column else None
             if text:
                 draft.columns[name] = text
         return draft
 
-    def _table(self, table: Table) -> str:
-        label = _words(table.name).capitalize()
+    def _table(self, table: Table) -> str | None:
+        """Only join tables get a description: "Users." would add nothing."""
+        if len(table.foreign_keys) != 2:
+            return None
         fk_columns = {c for fk in table.foreign_keys for c in fk.columns}
-        others = [c for c in table.columns if c.name not in fk_columns and c.name != "id"]
-        if len(table.foreign_keys) == 2 and len(others) <= 2:
-            a, b = (fk.ref_table for fk in table.foreign_keys)
-            return f"{label}: links {a} and {b} (many-to-many)."
-        return f"{label}."
+        keyed_by_links = bool(table.primary_key) and set(table.primary_key) == fk_columns
+        unkeyed_link = not table.primary_key and len(table.columns) <= len(fk_columns) + 1
+        if not (keyed_by_links or unkeyed_link):
+            return None
+        a, b = (fk.ref_table for fk in table.foreign_keys)
+        return f"Links {a} and {b} (many-to-many)."
 
-    def _column(self, table: Table, column: Column) -> str | None:
+    def _column(self, table: Table, column: Column, schema: Schema) -> str | None:
         name = column.name
         key = _words(name).replace(" ", "_")
         thing = _thing(table)
@@ -171,12 +174,7 @@ class HeuristicDescriber:
         if words and words[0] in {"is", "has", "can", "should", "was"} and len(words) > 1:
             return f"Whether the {thing} {words[0]} {' '.join(words[1:])}."
         if words and words[-1] in {"at", "on"} and len(words) > 1:
-            event = " ".join(words[:-1])
-            return (
-                f"When the {thing} was {event}."
-                if event.endswith("ed")
-                else f"Timestamp of {event}."
-            )
+            return _event_phrase(thing, words[:-1], date=words[-1] == "on")
         if words and words[-1] == "cents" and len(words) > 1:
             return f"{' '.join(words[:-1]).capitalize()} in cents."
         if words and words[-1] == "count" and len(words) > 1:
@@ -189,7 +187,7 @@ class HeuristicDescriber:
         if key in {"name", "title", "label"}:
             return f"{key.capitalize()} of the {thing}."
         if key in {"status", "state"}:
-            values = _enum_values(column)
+            values = _enum_values(column, schema)
             suffix = f" One of: {', '.join(values)}." if values else ""
             return f"Current {key} of the {thing}.{suffix}"
         if key in {"type", "kind", "category"}:
@@ -197,9 +195,62 @@ class HeuristicDescriber:
         return None
 
 
-def _enum_values(column: Column) -> list[str]:
+def _enum_values(column: Column, schema: Schema) -> list[str]:
     match = re.match(r"enum\((.*)\)$", column.type)
-    return re.findall(r"'((?:[^']|'')*)'", match.group(1)) if match else []
+    if match:
+        return re.findall(r"'((?:[^']|'')*)'", match.group(1))
+    for name, values in schema.enums.items():
+        if column.type == name.split(".")[-1].lower():
+            return list(values)
+    return []
+
+
+_IRREGULAR_PAST = {
+    "paid",
+    "sent",
+    "built",
+    "held",
+    "made",
+    "read",
+    "run",
+    "seen",
+    "won",
+    "lost",
+    "sold",
+    "bought",
+    "taken",
+    "given",
+    "done",
+    "begun",
+    "shown",
+    "known",
+    "written",
+    "spent",
+    "set",
+    "put",
+    "cut",
+    "hit",
+    "quit",
+    "shut",
+    "left",
+    "met",
+    "kept",
+    "found",
+}
+
+
+def _event_phrase(thing: str, words: list[str], date: bool) -> str:
+    """``paid_at`` -> "When the invoice was paid."; ``renews_on`` -> "When the ... renews."."""
+    event = " ".join(words)
+    if len(words) == 1:
+        word = words[0]
+        if word.endswith("ed") or word in _IRREGULAR_PAST:
+            return f"When the {thing} was {word}."
+        if word == "due":
+            return f"When the {thing} is due."
+        if word.endswith("s") and not word.endswith("ss"):
+            return f"When the {thing} {word}."
+    return f"{event.capitalize()} {'date' if date else 'time'}."
 
 
 # =========================================================================== Claude

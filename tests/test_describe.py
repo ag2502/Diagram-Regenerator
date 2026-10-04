@@ -53,7 +53,7 @@ def test_heuristics(schema):
     describer = HeuristicDescriber()
     users = schema.get("users")
     draft = describer.describe(users, schema, [c.name for c in users.columns], True)
-    assert draft.table == "Users."
+    assert draft.table is None  # "Users." would add nothing
     assert draft.columns == {
         "id": "Primary key (UUID).",
         "email": "Email address.",
@@ -68,7 +68,7 @@ def test_heuristics(schema):
     }
     members = schema.get("group_members")
     draft = describer.describe(members, schema, ["group_id", "user_id"], True)
-    assert draft.table == "Group members: links groups and users (many-to-many)."
+    assert draft.table == "Links groups and users (many-to-many)."
     assert draft.columns["group_id"] == "References groups.id; rows are deleted with it."
 
 
@@ -81,7 +81,8 @@ def test_draft_descriptions_respects_people_and_comments(schema):
     assert docs.column("users", "is_active") == "[draft] old guess"
     assert docs.column("users", "mystery") is None  # has a database comment
     assert docs.column("users", "created_at") == "[draft] When the user was created."
-    assert docs.table("groups") == "[draft] Groups."
+    assert docs.table("group_members") == "[draft] Links groups and users (many-to-many)."
+    assert docs.table("groups") is None
     assert result.tables == 3 and result.added > 10
 
     redrafted = draft_descriptions(
@@ -244,8 +245,8 @@ def test_cli_describe_heuristic(tmp_path, monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "across 2 tables" in out and "Review docs/schema/descriptions.yml" in out
     docs = Descriptions.load(tmp_path / "docs/schema/descriptions.yml")
-    assert docs.table("groups") == "[draft] Groups."
-    assert docs.table("users") is None
+    assert docs.table("group_members").startswith("[draft] Links groups")
+    assert docs.column("users", "email") is None
 
     assert main(["generate"]) == 0
     readme = (tmp_path / "docs/schema/README.md").read_text()
@@ -254,3 +255,36 @@ def test_cli_describe_heuristic(tmp_path, monkeypatch, capsys):
     assert main(["describe", "--provider", "heuristic", "--table", "nope*"]) == 2
     assert main(["describe", "--provider", "heuristic", "--samples", "3"]) == 2
     assert "live database" in capsys.readouterr().err
+
+
+def test_heuristic_events_join_tables_and_enums():
+    schema = replay(
+        [
+            (
+                "s.sql",
+                """
+                CREATE TYPE task_status AS ENUM ('todo', 'done');
+                CREATE TABLE users (id int PRIMARY KEY);
+                CREATE TABLE tasks (id int PRIMARY KEY, status task_status);
+                CREATE TABLE comments (id int PRIMARY KEY, task_id int REFERENCES tasks(id),
+                    author_id int REFERENCES users(id), body text);
+                CREATE TABLE invoices (id int PRIMARY KEY, paid_at timestamptz, due_on date,
+                    renews_on date, last_login_at timestamptz);
+                """,
+            )
+        ]
+    ).schema
+    describer = HeuristicDescriber()
+    invoices = schema.get("invoices")
+    draft = describer.describe(
+        invoices, schema, ["paid_at", "due_on", "renews_on", "last_login_at"], False
+    )
+    assert draft.columns == {
+        "paid_at": "When the invoice was paid.",
+        "due_on": "When the invoice is due.",
+        "renews_on": "When the invoice renews.",
+        "last_login_at": "Last login time.",
+    }
+    assert describer.describe(schema.get("comments"), schema, [], True).table is None
+    status = describer.describe(schema.get("tasks"), schema, ["status"], False).columns["status"]
+    assert status == "Current status of the task. One of: todo, done."
