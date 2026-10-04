@@ -167,6 +167,71 @@ def cmd_diff(args: argparse.Namespace) -> int:
     return EXIT_FAIL if _fails(diff, args.fail_on or config.fail_on) else EXIT_OK
 
 
+def cmd_drift(args: argparse.Namespace) -> int:
+    from diagram_regenerator.drift import (
+        detect_drift,
+        format_drift_json,
+        format_drift_markdown,
+        format_drift_text,
+    )
+    from diagram_regenerator.notify import NotifyError, ci_run_url, drift_message, post_slack
+
+    project = _project(args)
+    config = project.config
+    if args.env:
+        specs = {}
+        for item in args.env:
+            name, _, spec = item.partition("=")
+            if not name or not spec:
+                raise CommandError(f"--env expects NAME=SOURCE, got {item!r}")
+            specs[name] = spec
+    elif config.environments:
+        specs = {name: f"env:{name}" for name in config.environments}
+    else:
+        raise CommandError(
+            "no environments to check: add an [environments] table to the config "
+            "or pass --env NAME=URL (repeatable)"
+        )
+
+    baseline = args.baseline or config.drift_baseline
+    if baseline == "source":
+        baseline_schema, baseline_label = project.load(), project.describe()
+    elif baseline in specs:
+        baseline_schema, baseline_label = project.load(specs.pop(baseline)), baseline
+    else:
+        baseline_schema, baseline_label = project.load(baseline), project.describe(baseline)
+    if not specs:
+        raise CommandError("nothing to compare: the baseline was the only environment")
+
+    loaders = {name: (lambda spec=spec: project.load(spec)) for name, spec in specs.items()}
+    ignore = sorted(set(config.drift_ignore) | set(args.ignore or []))
+    report = detect_drift(baseline_label, baseline_schema, loaders, ignore=ignore)
+
+    if args.format == "json":
+        text = format_drift_json(report)
+    elif args.format == "markdown":
+        link = ci_run_url()
+        text = format_drift_markdown(report, footer=f"<sub>[Run]({link})</sub>" if link else None)
+    else:
+        text = format_drift_text(report)
+    _write_or_print(text, args.output)
+
+    if args.slack or args.slack_webhook:
+        webhook = args.slack_webhook or config.webhook() or os.environ.get("SLACK_WEBHOOK_URL")
+        if not webhook:
+            raise CommandError(
+                "--slack needs a webhook: set notify.slack_webhook, SLACK_WEBHOOK_URL "
+                "or --slack-webhook"
+            )
+        if report.has_drift or args.notify_always:
+            try:
+                post_slack(webhook, drift_message(report, link=ci_run_url()))
+                print("notified Slack", file=sys.stderr)
+            except NotifyError as exc:
+                print(f"warning: {exc}", file=sys.stderr)
+    return EXIT_FAIL if report.has_drift and not args.no_fail else EXIT_OK
+
+
 def cmd_render(args: argparse.Namespace) -> int:
     project = _project(args)
     schema = project.load(args.target) if args.target else project.load()
@@ -244,6 +309,34 @@ def build_parser() -> argparse.ArgumentParser:
     diff.add_argument("--title", help="heading for Markdown output")
     diff.add_argument("--no-diagram", action="store_true", help="omit the Mermaid visual diff")
     diff.set_defaults(handler=cmd_diff)
+
+    drift = commands.add_parser(
+        "drift",
+        parents=[common, with_source],
+        help="compare live environments with the baseline and alert on drift",
+        description="Diff each environment against a baseline (default: the configured "
+        "source, i.e. what the code expects). Exit 1 when any environment differs or "
+        "can't be read.",
+    )
+    drift.add_argument(
+        "--env",
+        action="append",
+        metavar="NAME=SOURCE",
+        help="environment to check (repeatable; default: [environments] in the config)",
+    )
+    drift.add_argument(
+        "--baseline", help="'source', an environment name or any source (default: config)"
+    )
+    drift.add_argument("-f", "--format", choices=("text", "markdown", "json"), default="text")
+    drift.add_argument("-o", "--output", help="write to a file instead of stdout")
+    drift.add_argument("--ignore", action="append", choices=IGNORABLE, help="skip a kind of change")
+    drift.add_argument("--slack", action="store_true", help="post to Slack when drift is found")
+    drift.add_argument("--slack-webhook", help="Slack incoming-webhook URL (implies --slack)")
+    drift.add_argument(
+        "--notify-always", action="store_true", help="post to Slack even when nothing drifted"
+    )
+    drift.add_argument("--no-fail", action="store_true", help="exit 0 even when drift is found")
+    drift.set_defaults(handler=cmd_drift)
 
     render_cmd = commands.add_parser(
         "render",
