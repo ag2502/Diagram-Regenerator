@@ -1,7 +1,7 @@
 # Hooks for https://pre-commit.com. In your project's .pre-commit-config.yaml:
 #
 #   - repo: https://github.com/ag2502/Diagram-Regenerator
-#     rev: v0.1.0
+#     rev: v0.1.1
 #     hooks:
 #       - id: diagram-regen-generate   # or diagram-regen-check to only verify
 #

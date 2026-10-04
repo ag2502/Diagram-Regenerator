@@ -257,7 +257,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: ag2502/Diagram-Regenerator@v0.1.0
+      - uses: ag2502/Diagram-Regenerator@v0.1.1
         with:
           mode: ${{ github.event_name == 'pull_request' && 'pr' || 'update' }}
 ```
@@ -275,7 +275,7 @@ Other inputs: `config`, `working-directory`, `base`, `fail-on`, `comment`, `extr
 instead of a comment. A scheduled drift job (`diagram-regen init-ci --drift`):
 
 ```yaml
-      - uses: ag2502/Diagram-Regenerator@v0.1.0
+      - uses: ag2502/Diagram-Regenerator@v0.1.1
         with:
           mode: drift
           extras: postgres
@@ -395,7 +395,7 @@ model = "claude-opus-5-5"
 
 ```yaml
 - repo: https://github.com/ag2502/Diagram-Regenerator
-  rev: v0.1.0
+  rev: v0.1.1
   hooks:
     - id: diagram-regen-generate   # or diagram-regen-check
 ```
