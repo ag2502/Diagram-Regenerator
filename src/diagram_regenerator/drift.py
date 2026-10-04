@@ -143,6 +143,28 @@ def _cell(change: Change) -> str:
     return change.kind.replace("_", " ")
 
 
+def drift_phrase(change: Change) -> str:
+    """Describe a change from the environment's point of view ("missing", "extra")."""
+    target = f"`{change.target}`"
+    before, after = change.before, change.after
+    phrases = {
+        "table_added": f"extra table {target}",
+        "table_removed": f"missing table {target}",
+        "column_added": f"extra column {target}",
+        "column_removed": f"missing column {target}",
+        "column_type_changed": f"{target} is {after} here (baseline {before})",
+        "column_nullable": f"{target} allows NULL here (baseline NOT NULL)",
+        "column_not_null": f"{target} is NOT NULL here (baseline allows NULL)",
+        "column_default_changed": f"{target} defaults to {after} here (baseline {before})",
+        "index_added": f"extra {after} on {target}",
+        "index_removed": f"missing {before} on {target}",
+        "foreign_key_added": f"extra foreign key {after} on {target}",
+        "foreign_key_removed": f"missing foreign key {before} on {target}",
+        "primary_key_changed": f"primary key of {target} is {after} here (baseline {before})",
+    }
+    return phrases.get(change.kind, change.summary)
+
+
 def detect_drift(
     baseline_name: str,
     baseline: Schema,

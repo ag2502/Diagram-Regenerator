@@ -146,7 +146,8 @@ def test_cli_drift_with_slack(envs, tmp_path, monkeypatch, slack, capsys):
     (message,) = _Hook.received
     assert message["blocks"][0]["text"]["text"] == "Schema drift detected"
     joined = json.dumps(message)
-    assert "staging" in joined and "Column `orders.discount_cents` removed" in joined
+    assert "staging" in joined and "missing column `orders.discount_cents`" in joined
+    assert "`customers.email` is varchar(320) here (baseline varchar(255))" in joined
     assert "https://github.com/acme/shop/actions/runs/42" in joined
     assert "sqlite:///" not in joined  # never leak connection strings
 

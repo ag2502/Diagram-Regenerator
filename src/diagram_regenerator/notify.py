@@ -8,7 +8,7 @@ import urllib.error
 import urllib.request
 
 from diagram_regenerator.diff import SchemaDiff
-from diagram_regenerator.drift import DriftReport
+from diagram_regenerator.drift import DriftReport, drift_phrase
 from diagram_regenerator.report import ICONS
 
 MAX_LINES = 12
@@ -72,11 +72,7 @@ def drift_message(report: DriftReport, link: str | None = None, project: str | N
         diff = report.diffs.get(name)
         if not diff or not diff.has_changes:
             continue
-        lines = [
-            f"{ICONS[c.severity]} {c.summary}"
-            + (f": {c.after}" if c.kind == "column_type_changed" else "")
-            for c in diff.changes[:MAX_LINES]
-        ]
+        lines = [f"{ICONS[c.severity]} {drift_phrase(c)}" for c in diff.changes[:MAX_LINES]]
         if len(diff.changes) > MAX_LINES:
             lines.append(f"…and {len(diff.changes) - MAX_LINES} more")
         blocks.append(_mrkdwn(f"*{name}*\n" + "\n".join(lines)))
