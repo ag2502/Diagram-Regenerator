@@ -1,0 +1,2185 @@
+{
+  "format": "diagram-regenerator/schema@1",
+  "dialect": "postgresql",
+  "tables": {
+    "annotation": {
+      "name": "annotation",
+      "columns": [
+        {
+          "name": "annotation_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "website_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "date",
+          "type": "timestamptz(6)",
+          "nullable": false
+        },
+        {
+          "name": "all_day",
+          "type": "boolean",
+          "nullable": false,
+          "default": "true"
+        },
+        {
+          "name": "note",
+          "type": "varchar(500)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "nullable": true,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "annotation_id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "website_id",
+            "date"
+          ],
+          "unique": false,
+          "name": "annotation_website_id_date_idx"
+        }
+      ]
+    },
+    "api_key": {
+      "name": "api_key",
+      "columns": [
+        {
+          "name": "api_key_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "key_hash",
+          "type": "varchar(128)",
+          "nullable": false
+        },
+        {
+          "name": "key_prefix",
+          "type": "varchar(20)",
+          "nullable": false
+        },
+        {
+          "name": "last_used_at",
+          "type": "timestamptz(6)",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "nullable": true,
+          "default": "current_timestamp"
+        }
+      ],
+      "primary_key": [
+        "api_key_id"
+      ],
+      "foreign_keys": [
+        {
+          "columns": [
+            "user_id"
+          ],
+          "ref_table": "user",
+          "ref_columns": [
+            "user_id"
+          ],
+          "name": "api_key_user_id_fkey",
+          "on_delete": "CASCADE",
+          "on_update": "CASCADE"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "key_hash"
+          ],
+          "unique": true,
+          "name": "api_key_key_hash_key"
+        },
+        {
+          "columns": [
+            "user_id"
+          ],
+          "unique": false,
+          "name": "api_key_user_id_idx"
+        }
+      ]
+    },
+    "app_setting": {
+      "name": "app_setting",
+      "columns": [
+        {
+          "name": "key",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "value",
+          "type": "text",
+          "nullable": false
+        }
+      ],
+      "primary_key": [
+        "key"
+      ],
+      "foreign_keys": [],
+      "indexes": []
+    },
+    "board": {
+      "name": "board",
+      "columns": [
+        {
+          "name": "board_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "type",
+          "type": "varchar(50)",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "varchar(200)",
+          "nullable": false
+        },
+        {
+          "name": "description",
+          "type": "varchar(500)",
+          "nullable": false
+        },
+        {
+          "name": "parameters",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "team_id",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "nullable": true,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "board_id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "created_at"
+          ],
+          "unique": false,
+          "name": "board_created_at_idx"
+        },
+        {
+          "columns": [
+            "team_id"
+          ],
+          "unique": false,
+          "name": "board_team_id_idx"
+        },
+        {
+          "columns": [
+            "user_id"
+          ],
+          "unique": false,
+          "name": "board_user_id_idx"
+        }
+      ]
+    },
+    "event_data": {
+      "name": "event_data",
+      "columns": [
+        {
+          "name": "event_data_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "website_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "website_event_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "data_key",
+          "type": "varchar(500)",
+          "nullable": false
+        },
+        {
+          "name": "string_value",
+          "type": "varchar(500)",
+          "nullable": true
+        },
+        {
+          "name": "number_value",
+          "type": "numeric(19,4)",
+          "nullable": true
+        },
+        {
+          "name": "date_value",
+          "type": "timestamptz(6)",
+          "nullable": true
+        },
+        {
+          "name": "data_type",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "nullable": true,
+          "default": "current_timestamp"
+        }
+      ],
+      "primary_key": [
+        "event_data_id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "created_at"
+          ],
+          "unique": false,
+          "name": "event_data_created_at_idx"
+        },
+        {
+          "columns": [
+            "website_event_id"
+          ],
+          "unique": false,
+          "name": "event_data_website_event_id_idx"
+        },
+        {
+          "columns": [
+            "website_id"
+          ],
+          "unique": false,
+          "name": "event_data_website_id_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "created_at"
+          ],
+          "unique": false,
+          "name": "event_data_website_id_created_at_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "created_at",
+            "data_key"
+          ],
+          "unique": false,
+          "name": "event_data_website_id_created_at_data_key_idx"
+        }
+      ]
+    },
+    "heatmap_event": {
+      "name": "heatmap_event",
+      "columns": [
+        {
+          "name": "heatmap_event_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "website_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "session_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "visit_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "url_path",
+          "type": "varchar(500)",
+          "nullable": false
+        },
+        {
+          "name": "event_type",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "x",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "y",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "page_x",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "page_y",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "page_w",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "viewport_w",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "viewport_h",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "page_h",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "scroll_pct",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "nullable": false,
+          "default": "current_timestamp"
+        }
+      ],
+      "primary_key": [
+        "heatmap_event_id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "visit_id"
+          ],
+          "unique": false,
+          "name": "heatmap_event_visit_id_idx"
+        },
+        {
+          "columns": [
+            "website_id"
+          ],
+          "unique": false,
+          "name": "heatmap_event_website_id_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "created_at"
+          ],
+          "unique": false,
+          "name": "heatmap_event_website_id_created_at_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "url_path",
+            "event_type",
+            "created_at"
+          ],
+          "unique": false,
+          "name": "heatmap_event_website_id_url_path_event_type_created_at_idx"
+        }
+      ]
+    },
+    "link": {
+      "name": "link",
+      "columns": [
+        {
+          "name": "link_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "varchar(100)",
+          "nullable": false
+        },
+        {
+          "name": "url",
+          "type": "varchar(500)",
+          "nullable": false
+        },
+        {
+          "name": "slug",
+          "type": "varchar(100)",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "team_id",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "nullable": true,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "nullable": true
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamptz(6)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "link_id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "slug"
+          ],
+          "unique": true,
+          "name": "link_slug_key"
+        },
+        {
+          "columns": [
+            "created_at"
+          ],
+          "unique": false,
+          "name": "link_created_at_idx"
+        },
+        {
+          "columns": [
+            "slug"
+          ],
+          "unique": false,
+          "name": "link_slug_idx"
+        },
+        {
+          "columns": [
+            "team_id"
+          ],
+          "unique": false,
+          "name": "link_team_id_idx"
+        },
+        {
+          "columns": [
+            "user_id"
+          ],
+          "unique": false,
+          "name": "link_user_id_idx"
+        }
+      ]
+    },
+    "pixel": {
+      "name": "pixel",
+      "columns": [
+        {
+          "name": "pixel_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "varchar(100)",
+          "nullable": false
+        },
+        {
+          "name": "slug",
+          "type": "varchar(100)",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "team_id",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "nullable": true,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "nullable": true
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamptz(6)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "pixel_id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "slug"
+          ],
+          "unique": true,
+          "name": "pixel_slug_key"
+        },
+        {
+          "columns": [
+            "created_at"
+          ],
+          "unique": false,
+          "name": "pixel_created_at_idx"
+        },
+        {
+          "columns": [
+            "slug"
+          ],
+          "unique": false,
+          "name": "pixel_slug_idx"
+        },
+        {
+          "columns": [
+            "team_id"
+          ],
+          "unique": false,
+          "name": "pixel_team_id_idx"
+        },
+        {
+          "columns": [
+            "user_id"
+          ],
+          "unique": false,
+          "name": "pixel_user_id_idx"
+        }
+      ]
+    },
+    "report": {
+      "name": "report",
+      "columns": [
+        {
+          "name": "report_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "website_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "type",
+          "type": "varchar(50)",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "varchar(200)",
+          "nullable": false
+        },
+        {
+          "name": "description",
+          "type": "varchar(500)",
+          "nullable": false
+        },
+        {
+          "name": "parameters",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "nullable": true,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "report_id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "name"
+          ],
+          "unique": false,
+          "name": "report_name_idx"
+        },
+        {
+          "columns": [
+            "type"
+          ],
+          "unique": false,
+          "name": "report_type_idx"
+        },
+        {
+          "columns": [
+            "user_id"
+          ],
+          "unique": false,
+          "name": "report_user_id_idx"
+        },
+        {
+          "columns": [
+            "website_id"
+          ],
+          "unique": false,
+          "name": "report_website_id_idx"
+        }
+      ]
+    },
+    "revenue": {
+      "name": "revenue",
+      "columns": [
+        {
+          "name": "revenue_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "website_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "session_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "event_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "event_name",
+          "type": "varchar(50)",
+          "nullable": false
+        },
+        {
+          "name": "currency",
+          "type": "varchar(10)",
+          "nullable": false
+        },
+        {
+          "name": "revenue",
+          "type": "numeric(19,4)",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "nullable": true,
+          "default": "current_timestamp"
+        }
+      ],
+      "primary_key": [
+        "revenue_id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "session_id"
+          ],
+          "unique": false,
+          "name": "revenue_session_id_idx"
+        },
+        {
+          "columns": [
+            "website_id"
+          ],
+          "unique": false,
+          "name": "revenue_website_id_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "created_at"
+          ],
+          "unique": false,
+          "name": "revenue_website_id_created_at_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "session_id",
+            "created_at"
+          ],
+          "unique": false,
+          "name": "revenue_website_id_session_id_created_at_idx"
+        }
+      ]
+    },
+    "segment": {
+      "name": "segment",
+      "columns": [
+        {
+          "name": "segment_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "website_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "type",
+          "type": "varchar(50)",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "varchar(200)",
+          "nullable": false
+        },
+        {
+          "name": "parameters",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "nullable": true,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "segment_id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "website_id"
+          ],
+          "unique": false,
+          "name": "segment_website_id_idx"
+        }
+      ]
+    },
+    "session": {
+      "name": "session",
+      "columns": [
+        {
+          "name": "session_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "website_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "browser",
+          "type": "varchar(20)",
+          "nullable": true
+        },
+        {
+          "name": "os",
+          "type": "varchar(20)",
+          "nullable": true
+        },
+        {
+          "name": "device",
+          "type": "varchar(20)",
+          "nullable": true
+        },
+        {
+          "name": "screen",
+          "type": "varchar(11)",
+          "nullable": true
+        },
+        {
+          "name": "language",
+          "type": "varchar(35)",
+          "nullable": true
+        },
+        {
+          "name": "country",
+          "type": "char(2)",
+          "nullable": true
+        },
+        {
+          "name": "region",
+          "type": "varchar(20)",
+          "nullable": true
+        },
+        {
+          "name": "city",
+          "type": "varchar(50)",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "nullable": true,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "distinct_id",
+          "type": "varchar(50)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "session_id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "created_at"
+          ],
+          "unique": false,
+          "name": "session_created_at_idx"
+        },
+        {
+          "columns": [
+            "website_id"
+          ],
+          "unique": false,
+          "name": "session_website_id_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "created_at"
+          ],
+          "unique": false,
+          "name": "session_website_id_created_at_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "created_at",
+            "browser"
+          ],
+          "unique": false,
+          "name": "session_website_id_created_at_browser_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "created_at",
+            "city"
+          ],
+          "unique": false,
+          "name": "session_website_id_created_at_city_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "created_at",
+            "country"
+          ],
+          "unique": false,
+          "name": "session_website_id_created_at_country_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "created_at",
+            "device"
+          ],
+          "unique": false,
+          "name": "session_website_id_created_at_device_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "created_at",
+            "language"
+          ],
+          "unique": false,
+          "name": "session_website_id_created_at_language_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "created_at",
+            "os"
+          ],
+          "unique": false,
+          "name": "session_website_id_created_at_os_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "created_at",
+            "region"
+          ],
+          "unique": false,
+          "name": "session_website_id_created_at_region_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "created_at",
+            "screen"
+          ],
+          "unique": false,
+          "name": "session_website_id_created_at_screen_idx"
+        }
+      ]
+    },
+    "session_data": {
+      "name": "session_data",
+      "columns": [
+        {
+          "name": "session_data_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "website_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "session_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "data_key",
+          "type": "varchar(500)",
+          "nullable": false
+        },
+        {
+          "name": "string_value",
+          "type": "varchar(500)",
+          "nullable": true
+        },
+        {
+          "name": "number_value",
+          "type": "numeric(19,4)",
+          "nullable": true
+        },
+        {
+          "name": "date_value",
+          "type": "timestamptz(6)",
+          "nullable": true
+        },
+        {
+          "name": "data_type",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "nullable": true,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "distinct_id",
+          "type": "varchar(50)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "session_data_id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "session_id",
+            "data_key"
+          ],
+          "unique": true,
+          "name": "session_data_session_id_data_key_key"
+        },
+        {
+          "columns": [
+            "created_at"
+          ],
+          "unique": false,
+          "name": "session_data_created_at_idx"
+        },
+        {
+          "columns": [
+            "session_id"
+          ],
+          "unique": false,
+          "name": "session_data_session_id_idx"
+        },
+        {
+          "columns": [
+            "session_id",
+            "created_at"
+          ],
+          "unique": false,
+          "name": "session_data_session_id_created_at_idx"
+        },
+        {
+          "columns": [
+            "website_id"
+          ],
+          "unique": false,
+          "name": "session_data_website_id_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "created_at",
+            "data_key"
+          ],
+          "unique": false,
+          "name": "session_data_website_id_created_at_data_key_idx"
+        }
+      ]
+    },
+    "session_link": {
+      "name": "session_link",
+      "columns": [
+        {
+          "name": "website_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "session_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "distinct_id",
+          "type": "varchar(50)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "nullable": true,
+          "default": "current_timestamp"
+        }
+      ],
+      "primary_key": [
+        "website_id",
+        "distinct_id",
+        "session_id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "website_id",
+            "session_id"
+          ],
+          "unique": false,
+          "name": "session_link_website_id_session_id_idx"
+        }
+      ]
+    },
+    "session_replay": {
+      "name": "session_replay",
+      "columns": [
+        {
+          "name": "replay_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "website_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "session_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "visit_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "chunk_index",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "events",
+          "type": "bytea",
+          "nullable": false
+        },
+        {
+          "name": "event_count",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "started_at",
+          "type": "timestamptz(6)",
+          "nullable": false
+        },
+        {
+          "name": "ended_at",
+          "type": "timestamptz(6)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "nullable": true,
+          "default": "current_timestamp"
+        }
+      ],
+      "primary_key": [
+        "replay_id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "session_id"
+          ],
+          "unique": false,
+          "name": "session_replay_session_id_idx"
+        },
+        {
+          "columns": [
+            "session_id",
+            "chunk_index"
+          ],
+          "unique": false,
+          "name": "session_replay_session_id_chunk_index_idx"
+        },
+        {
+          "columns": [
+            "visit_id"
+          ],
+          "unique": false,
+          "name": "session_replay_visit_id_idx"
+        },
+        {
+          "columns": [
+            "website_id"
+          ],
+          "unique": false,
+          "name": "session_replay_website_id_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "created_at"
+          ],
+          "unique": false,
+          "name": "session_replay_website_id_created_at_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "session_id"
+          ],
+          "unique": false,
+          "name": "session_replay_website_id_session_id_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "visit_id"
+          ],
+          "unique": false,
+          "name": "session_replay_website_id_visit_id_idx"
+        }
+      ]
+    },
+    "session_replay_saved": {
+      "name": "session_replay_saved",
+      "columns": [
+        {
+          "name": "saved_replay_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "varchar(100)",
+          "nullable": false
+        },
+        {
+          "name": "website_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "visit_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "nullable": true,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "saved_replay_id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "website_id",
+            "visit_id"
+          ],
+          "unique": true,
+          "name": "session_replay_saved_website_id_visit_id_key"
+        },
+        {
+          "columns": [
+            "visit_id"
+          ],
+          "unique": false,
+          "name": "session_replay_saved_visit_id_idx"
+        },
+        {
+          "columns": [
+            "website_id"
+          ],
+          "unique": false,
+          "name": "session_replay_saved_website_id_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "created_at"
+          ],
+          "unique": false,
+          "name": "session_replay_saved_website_id_created_at_idx"
+        }
+      ]
+    },
+    "share": {
+      "name": "share",
+      "columns": [
+        {
+          "name": "share_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "entity_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "varchar(200)",
+          "nullable": false
+        },
+        {
+          "name": "share_type",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "slug",
+          "type": "varchar(100)",
+          "nullable": false
+        },
+        {
+          "name": "parameters",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "nullable": true,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "share_id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "slug"
+          ],
+          "unique": true,
+          "name": "share_slug_key"
+        },
+        {
+          "columns": [
+            "entity_id"
+          ],
+          "unique": false,
+          "name": "share_entity_id_idx"
+        }
+      ]
+    },
+    "team": {
+      "name": "team",
+      "columns": [
+        {
+          "name": "team_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "varchar(50)",
+          "nullable": false
+        },
+        {
+          "name": "access_code",
+          "type": "varchar(50)",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "nullable": true,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "nullable": true
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamptz(6)",
+          "nullable": true
+        },
+        {
+          "name": "logo_url",
+          "type": "varchar(2183)",
+          "nullable": true
+        },
+        {
+          "name": "two_factor_required",
+          "type": "boolean",
+          "nullable": false,
+          "default": "false"
+        }
+      ],
+      "primary_key": [
+        "team_id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "access_code"
+          ],
+          "unique": true,
+          "name": "team_access_code_key"
+        },
+        {
+          "columns": [
+            "access_code"
+          ],
+          "unique": false,
+          "name": "team_access_code_idx"
+        }
+      ]
+    },
+    "team_user": {
+      "name": "team_user",
+      "columns": [
+        {
+          "name": "team_user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "team_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "role",
+          "type": "varchar(50)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "nullable": true,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "team_user_id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "team_id"
+          ],
+          "unique": false,
+          "name": "team_user_team_id_idx"
+        },
+        {
+          "columns": [
+            "user_id"
+          ],
+          "unique": false,
+          "name": "team_user_user_id_idx"
+        }
+      ]
+    },
+    "two_factor_auth": {
+      "name": "two_factor_auth",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "secret",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "is_enabled",
+          "type": "boolean",
+          "nullable": false,
+          "default": "false"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "nullable": false,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "nullable": false
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "user_id"
+          ],
+          "unique": true,
+          "name": "two_factor_auth_user_id_key"
+        }
+      ]
+    },
+    "two_factor_backup_code": {
+      "name": "two_factor_backup_code",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "code_hash",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "used",
+          "type": "boolean",
+          "nullable": false,
+          "default": "false"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "nullable": false,
+          "default": "current_timestamp"
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "user_id"
+          ],
+          "unique": false,
+          "name": "two_factor_backup_code_user_id_idx"
+        }
+      ]
+    },
+    "two_factor_otp_used": {
+      "name": "two_factor_otp_used",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "otp",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "expires_at",
+          "type": "timestamptz(6)",
+          "nullable": false
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "user_id",
+            "otp"
+          ],
+          "unique": true,
+          "name": "two_factor_otp_used_user_id_otp_key"
+        }
+      ]
+    },
+    "two_factor_rate_limit": {
+      "name": "two_factor_rate_limit",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "attempts",
+          "type": "integer",
+          "nullable": false,
+          "default": "0"
+        },
+        {
+          "name": "locked_until",
+          "type": "timestamptz(6)",
+          "nullable": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "nullable": false
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "user_id"
+          ],
+          "unique": true,
+          "name": "two_factor_rate_limit_user_id_key"
+        }
+      ]
+    },
+    "user": {
+      "name": "user",
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "username",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "password",
+          "type": "varchar(60)",
+          "nullable": false
+        },
+        {
+          "name": "role",
+          "type": "varchar(50)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "nullable": true,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "nullable": true
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamptz(6)",
+          "nullable": true
+        },
+        {
+          "name": "display_name",
+          "type": "varchar(255)",
+          "nullable": true
+        },
+        {
+          "name": "logo_url",
+          "type": "varchar(2183)",
+          "nullable": true
+        },
+        {
+          "name": "two_factor_required",
+          "type": "boolean",
+          "nullable": false,
+          "default": "false"
+        }
+      ],
+      "primary_key": [
+        "user_id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "username"
+          ],
+          "unique": true,
+          "name": "user_username_key"
+        }
+      ]
+    },
+    "website": {
+      "name": "website",
+      "columns": [
+        {
+          "name": "website_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "varchar(100)",
+          "nullable": false
+        },
+        {
+          "name": "domain",
+          "type": "varchar(500)",
+          "nullable": true
+        },
+        {
+          "name": "reset_at",
+          "type": "timestamptz(6)",
+          "nullable": true
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "nullable": true,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "nullable": true
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamptz(6)",
+          "nullable": true
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "team_id",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "recorder_enabled",
+          "type": "boolean",
+          "nullable": false,
+          "default": "false"
+        },
+        {
+          "name": "replay_config",
+          "type": "jsonb",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "website_id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "created_at"
+          ],
+          "unique": false,
+          "name": "website_created_at_idx"
+        },
+        {
+          "columns": [
+            "created_by"
+          ],
+          "unique": false,
+          "name": "website_created_by_idx"
+        },
+        {
+          "columns": [
+            "team_id"
+          ],
+          "unique": false,
+          "name": "website_team_id_idx"
+        },
+        {
+          "columns": [
+            "user_id"
+          ],
+          "unique": false,
+          "name": "website_user_id_idx"
+        }
+      ]
+    },
+    "website_event": {
+      "name": "website_event",
+      "columns": [
+        {
+          "name": "event_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "website_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "session_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "nullable": true,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "url_path",
+          "type": "varchar(500)",
+          "nullable": false
+        },
+        {
+          "name": "url_query",
+          "type": "varchar(500)",
+          "nullable": true
+        },
+        {
+          "name": "referrer_path",
+          "type": "varchar(500)",
+          "nullable": true
+        },
+        {
+          "name": "referrer_query",
+          "type": "varchar(500)",
+          "nullable": true
+        },
+        {
+          "name": "referrer_domain",
+          "type": "varchar(500)",
+          "nullable": true
+        },
+        {
+          "name": "page_title",
+          "type": "varchar(500)",
+          "nullable": true
+        },
+        {
+          "name": "event_type",
+          "type": "integer",
+          "nullable": false,
+          "default": "1"
+        },
+        {
+          "name": "event_name",
+          "type": "varchar(50)",
+          "nullable": true
+        },
+        {
+          "name": "visit_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "tag",
+          "type": "varchar(50)",
+          "nullable": true
+        },
+        {
+          "name": "fbclid",
+          "type": "varchar(255)",
+          "nullable": true
+        },
+        {
+          "name": "gclid",
+          "type": "varchar(255)",
+          "nullable": true
+        },
+        {
+          "name": "li_fat_id",
+          "type": "varchar(255)",
+          "nullable": true
+        },
+        {
+          "name": "msclkid",
+          "type": "varchar(255)",
+          "nullable": true
+        },
+        {
+          "name": "ttclid",
+          "type": "varchar(255)",
+          "nullable": true
+        },
+        {
+          "name": "twclid",
+          "type": "varchar(255)",
+          "nullable": true
+        },
+        {
+          "name": "utm_campaign",
+          "type": "varchar(255)",
+          "nullable": true
+        },
+        {
+          "name": "utm_content",
+          "type": "varchar(255)",
+          "nullable": true
+        },
+        {
+          "name": "utm_medium",
+          "type": "varchar(255)",
+          "nullable": true
+        },
+        {
+          "name": "utm_source",
+          "type": "varchar(255)",
+          "nullable": true
+        },
+        {
+          "name": "utm_term",
+          "type": "varchar(255)",
+          "nullable": true
+        },
+        {
+          "name": "hostname",
+          "type": "varchar(100)",
+          "nullable": true
+        },
+        {
+          "name": "cls",
+          "type": "numeric(10,4)",
+          "nullable": true
+        },
+        {
+          "name": "fcp",
+          "type": "numeric(10,1)",
+          "nullable": true
+        },
+        {
+          "name": "inp",
+          "type": "numeric(10,1)",
+          "nullable": true
+        },
+        {
+          "name": "lcp",
+          "type": "numeric(10,1)",
+          "nullable": true
+        },
+        {
+          "name": "ttfb",
+          "type": "numeric(10,1)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "event_id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "created_at"
+          ],
+          "unique": false,
+          "name": "website_event_created_at_idx"
+        },
+        {
+          "columns": [
+            "session_id"
+          ],
+          "unique": false,
+          "name": "website_event_session_id_idx"
+        },
+        {
+          "columns": [
+            "visit_id"
+          ],
+          "unique": false,
+          "name": "website_event_visit_id_idx"
+        },
+        {
+          "columns": [
+            "website_id"
+          ],
+          "unique": false,
+          "name": "website_event_website_id_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "created_at"
+          ],
+          "unique": false,
+          "name": "website_event_website_id_created_at_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "created_at",
+            "event_name"
+          ],
+          "unique": false,
+          "name": "website_event_website_id_created_at_event_name_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "created_at",
+            "hostname"
+          ],
+          "unique": false,
+          "name": "website_event_website_id_created_at_hostname_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "created_at",
+            "page_title"
+          ],
+          "unique": false,
+          "name": "website_event_website_id_created_at_page_title_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "created_at",
+            "referrer_domain"
+          ],
+          "unique": false,
+          "name": "website_event_website_id_created_at_referrer_domain_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "created_at",
+            "tag"
+          ],
+          "unique": false,
+          "name": "website_event_website_id_created_at_tag_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "created_at",
+            "url_path"
+          ],
+          "unique": false,
+          "name": "website_event_website_id_created_at_url_path_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "created_at",
+            "url_query"
+          ],
+          "unique": false,
+          "name": "website_event_website_id_created_at_url_query_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "session_id",
+            "created_at"
+          ],
+          "unique": false,
+          "name": "website_event_website_id_session_id_created_at_idx"
+        },
+        {
+          "columns": [
+            "website_id",
+            "visit_id",
+            "created_at"
+          ],
+          "unique": false,
+          "name": "website_event_website_id_visit_id_created_at_idx"
+        }
+      ]
+    }
+  }
+}

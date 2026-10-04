@@ -1,0 +1,11 @@
+# Atuin (https://github.com/atuinsh/atuin, MIT): encrypted shell-history sync server.
+# Its sqlx PostgreSQL migrations are fetched into ../.cache by ../build.py.
+source = "../.cache/atuin/crates/atuin-server/src/db/postgres/migrations"
+dialect = "postgresql"
+descriptions = ""
+
+[output]
+snapshot = "schema.json"
+markdown = "README.md"
+title = "Atuin sync server database (generated demo)"
+source_label = "atuinsh/atuin@d440a2e crates/atuin-server/src/db/postgres/migrations"

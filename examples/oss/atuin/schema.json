@@ -1,0 +1,333 @@
+{
+  "format": "diagram-regenerator/schema@1",
+  "dialect": "postgresql",
+  "tables": {
+    "history": {
+      "name": "history",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "autoincrement": true
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "bigint",
+          "nullable": false,
+          "autoincrement": true
+        },
+        {
+          "name": "hostname",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "timestamp",
+          "type": "timestamp",
+          "nullable": false
+        },
+        {
+          "name": "data",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "client_id"
+          ],
+          "unique": true,
+          "name": "history_client_id_key"
+        },
+        {
+          "columns": [
+            "client_id",
+            "user_id",
+            "deleted_at"
+          ],
+          "unique": false,
+          "name": "history_deleted_index"
+        }
+      ]
+    },
+    "records": {
+      "name": "records",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "client_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "host",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "parent",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "timestamp",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "version",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "tag",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "data",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "cek",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": "current_timestamp"
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [],
+      "indexes": []
+    },
+    "sessions": {
+      "name": "sessions",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "autoincrement": true
+        },
+        {
+          "name": "user_id",
+          "type": "bigint",
+          "nullable": true,
+          "autoincrement": true
+        },
+        {
+          "name": "token",
+          "type": "varchar(128)",
+          "nullable": false
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "token"
+          ],
+          "unique": true,
+          "name": "sessions_token_key"
+        }
+      ]
+    },
+    "store": {
+      "name": "store",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "client_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "host",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "idx",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "timestamp",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "version",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "tag",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "data",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "cek",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": "current_timestamp"
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "user_id",
+            "host",
+            "tag",
+            "idx"
+          ],
+          "unique": true,
+          "name": "record_uniq"
+        }
+      ]
+    },
+    "users": {
+      "name": "users",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "autoincrement": true
+        },
+        {
+          "name": "username",
+          "type": "varchar(32)",
+          "nullable": false
+        },
+        {
+          "name": "email",
+          "type": "varchar(128)",
+          "nullable": false
+        },
+        {
+          "name": "password",
+          "type": "varchar(128)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": "current_timestamp"
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "email"
+          ],
+          "unique": true,
+          "name": "users_email_key"
+        },
+        {
+          "columns": [
+            "lower(email)"
+          ],
+          "unique": true,
+          "name": "email_unique_idx"
+        },
+        {
+          "columns": [
+            "lower(username)"
+          ],
+          "unique": true,
+          "name": "username_unique_idx"
+        },
+        {
+          "columns": [
+            "password"
+          ],
+          "unique": true,
+          "name": "users_password_key"
+        },
+        {
+          "columns": [
+            "username"
+          ],
+          "unique": true,
+          "name": "users_username_key"
+        }
+      ]
+    }
+  },
+  "enums": {
+    "event_type": [
+      "create",
+      "delete"
+    ]
+  }
+}

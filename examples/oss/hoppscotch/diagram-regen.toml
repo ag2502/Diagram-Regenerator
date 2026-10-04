@@ -1,0 +1,19 @@
+# Hoppscotch (https://github.com/hoppscotch/hoppscotch, MIT): open-source API development platform.
+# Its Prisma migrations are fetched into ../.cache by ../build.py.
+source = "../.cache/hoppscotch/packages/hoppscotch-backend/prisma/migrations"
+dialect = "postgresql"
+descriptions = ""
+
+[output]
+snapshot = "schema.json"
+markdown = "README.md"
+title = "Hoppscotch backend database (generated demo)"
+source_label = "hoppscotch/hoppscotch@63273f8 packages/hoppscotch-backend/prisma/migrations"
+diagram = "keys"
+
+[groups]
+"Users and sign-in" = ["User", "Account", "VerificationToken", "PersonalAccessToken", "UserSettings", "InvitedUsers"]
+"Teams" = ["Team", "TeamMember", "TeamInvitation", "TeamCollection", "TeamRequest", "TeamEnvironment"]
+"Personal workspace" = ["UserCollection", "UserRequest", "UserEnvironment", "UserHistory"]
+"Mock servers and publishing" = ["MockServer*", "PublishedDocs", "Shortcode"]
+"Instance admin" = ["InfraConfig", "InfraToken"]

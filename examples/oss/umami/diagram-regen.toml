@@ -1,0 +1,17 @@
+# Umami (https://github.com/umami-software/umami, MIT): privacy-focused web analytics.
+# Its Prisma migrations are fetched into ../.cache by ../build.py.
+source = "../.cache/umami/prisma/migrations"
+dialect = "postgresql"
+descriptions = ""
+
+[output]
+snapshot = "schema.json"
+markdown = "README.md"
+title = "Umami database (generated demo)"
+source_label = "umami-software/umami@ec0ff50 prisma/migrations"
+
+[groups]
+"Tracking" = ["website", "website_event", "session", "session_data", "event_data", "revenue", "heatmap_event", "session_link"]
+"Session replay" = ["session_replay*"]
+"Accounts and security" = ["user", "team", "team_user", "api_key", "two_factor_*"]
+"Sharing and reports" = ["report", "share", "board", "segment", "link", "pixel", "annotation", "app_setting"]

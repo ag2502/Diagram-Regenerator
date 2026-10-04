@@ -1,0 +1,1637 @@
+{
+  "format": "diagram-regenerator/schema@1",
+  "dialect": "postgresql",
+  "tables": {
+    "Account": {
+      "name": "Account",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "userId",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "provider",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "providerAccountId",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "providerRefreshToken",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "providerAccessToken",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "providerScope",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "loggedIn",
+          "type": "timestamptz(3)",
+          "nullable": false,
+          "default": "current_timestamp"
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "columns": [
+            "userId"
+          ],
+          "ref_table": "User",
+          "ref_columns": [
+            "uid"
+          ],
+          "name": "Account_userId_fkey",
+          "on_delete": "CASCADE",
+          "on_update": "CASCADE"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "provider",
+            "providerAccountId"
+          ],
+          "unique": true,
+          "name": "Account_provider_providerAccountId_key"
+        }
+      ]
+    },
+    "InfraConfig": {
+      "name": "InfraConfig",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "value",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "createdOn",
+          "type": "timestamptz(3)",
+          "nullable": false,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "updatedOn",
+          "type": "timestamptz(3)",
+          "nullable": false
+        },
+        {
+          "name": "isEncrypted",
+          "type": "boolean",
+          "nullable": false,
+          "default": "false"
+        },
+        {
+          "name": "lastSyncedEnvFileValue",
+          "type": "text",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "name"
+          ],
+          "unique": true,
+          "name": "InfraConfig_name_key"
+        }
+      ]
+    },
+    "InfraToken": {
+      "name": "InfraToken",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "creatorUid",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "label",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "token",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "expiresOn",
+          "type": "timestamptz(3)",
+          "nullable": true
+        },
+        {
+          "name": "createdOn",
+          "type": "timestamptz(3)",
+          "nullable": false,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "updatedOn",
+          "type": "timestamptz(3)",
+          "nullable": false,
+          "default": "current_timestamp"
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "token"
+          ],
+          "unique": true,
+          "name": "InfraToken_token_key"
+        }
+      ]
+    },
+    "InvitedUsers": {
+      "name": "InvitedUsers",
+      "columns": [
+        {
+          "name": "adminUid",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "adminEmail",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "inviteeEmail",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "invitedOn",
+          "type": "timestamptz(3)",
+          "nullable": false,
+          "default": "current_timestamp"
+        }
+      ],
+      "primary_key": [],
+      "foreign_keys": [
+        {
+          "columns": [
+            "adminUid"
+          ],
+          "ref_table": "User",
+          "ref_columns": [
+            "uid"
+          ],
+          "name": "InvitedUsers_adminUid_fkey",
+          "on_delete": "CASCADE",
+          "on_update": "CASCADE"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "inviteeEmail"
+          ],
+          "unique": true,
+          "name": "InvitedUsers_inviteeEmail_key"
+        }
+      ]
+    },
+    "MockServer": {
+      "name": "MockServer",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "subdomain",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "creatorUid",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "collectionID",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "workspaceType",
+          "type": "workspacetype",
+          "nullable": false
+        },
+        {
+          "name": "workspaceID",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "delayInMs",
+          "type": "integer",
+          "nullable": false,
+          "default": "0"
+        },
+        {
+          "name": "isPublic",
+          "type": "boolean",
+          "nullable": false,
+          "default": "true"
+        },
+        {
+          "name": "isActive",
+          "type": "boolean",
+          "nullable": false,
+          "default": "true"
+        },
+        {
+          "name": "hitCount",
+          "type": "integer",
+          "nullable": false,
+          "default": "0"
+        },
+        {
+          "name": "lastHitAt",
+          "type": "timestamptz(3)",
+          "nullable": true
+        },
+        {
+          "name": "createdOn",
+          "type": "timestamptz(3)",
+          "nullable": false,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "updatedOn",
+          "type": "timestamptz(3)",
+          "nullable": false
+        },
+        {
+          "name": "deletedAt",
+          "type": "timestamptz(3)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "columns": [
+            "creatorUid"
+          ],
+          "ref_table": "User",
+          "ref_columns": [
+            "uid"
+          ],
+          "name": "MockServer_creatorUid_fkey",
+          "on_delete": "SET NULL",
+          "on_update": "CASCADE"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "subdomain"
+          ],
+          "unique": true,
+          "name": "MockServer_subdomain_key"
+        }
+      ]
+    },
+    "MockServerActivity": {
+      "name": "MockServerActivity",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "mockServerID",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "action",
+          "type": "mockserveraction",
+          "nullable": false
+        },
+        {
+          "name": "performedBy",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "performedAt",
+          "type": "timestamptz(3)",
+          "nullable": false,
+          "default": "current_timestamp"
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "columns": [
+            "mockServerID"
+          ],
+          "ref_table": "MockServer",
+          "ref_columns": [
+            "id"
+          ],
+          "name": "MockServerActivity_mockServerID_fkey",
+          "on_delete": "CASCADE",
+          "on_update": "CASCADE"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "mockServerID"
+          ],
+          "unique": false,
+          "name": "MockServerActivity_mockServerID_idx"
+        }
+      ]
+    },
+    "MockServerLog": {
+      "name": "MockServerLog",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "mockServerID",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "requestMethod",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "requestPath",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "requestHeaders",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "requestBody",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "requestQuery",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "responseStatus",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "responseHeaders",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "responseBody",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "responseTime",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "ipAddress",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "userAgent",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "executedAt",
+          "type": "timestamptz(3)",
+          "nullable": false,
+          "default": "current_timestamp"
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "columns": [
+            "mockServerID"
+          ],
+          "ref_table": "MockServer",
+          "ref_columns": [
+            "id"
+          ],
+          "name": "MockServerLog_mockServerID_fkey",
+          "on_delete": "CASCADE",
+          "on_update": "CASCADE"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "mockServerID"
+          ],
+          "unique": false,
+          "name": "MockServerLog_mockServerID_idx"
+        },
+        {
+          "columns": [
+            "mockServerID",
+            "executedAt"
+          ],
+          "unique": false,
+          "name": "MockServerLog_mockServerID_executedAt_idx"
+        }
+      ]
+    },
+    "PersonalAccessToken": {
+      "name": "PersonalAccessToken",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "userUid",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "label",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "token",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "expiresOn",
+          "type": "timestamptz(3)",
+          "nullable": true
+        },
+        {
+          "name": "createdOn",
+          "type": "timestamptz(3)",
+          "nullable": false,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "updatedOn",
+          "type": "timestamptz(3)",
+          "nullable": false
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "columns": [
+            "userUid"
+          ],
+          "ref_table": "User",
+          "ref_columns": [
+            "uid"
+          ],
+          "name": "PersonalAccessToken_userUid_fkey",
+          "on_delete": "CASCADE",
+          "on_update": "CASCADE"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "token"
+          ],
+          "unique": true,
+          "name": "PersonalAccessToken_token_key"
+        }
+      ]
+    },
+    "PublishedDocs": {
+      "name": "PublishedDocs",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "collectionID",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "creatorUid",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "version",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "autoSync",
+          "type": "boolean",
+          "nullable": false
+        },
+        {
+          "name": "documentTree",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "workspaceType",
+          "type": "workspacetype",
+          "nullable": false
+        },
+        {
+          "name": "workspaceID",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "metadata",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "createdOn",
+          "type": "timestamptz(3)",
+          "nullable": false,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "updatedOn",
+          "type": "timestamptz(3)",
+          "nullable": false
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "environmentID",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "environmentName",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "environmentVariables",
+          "type": "jsonb",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "slug",
+            "version"
+          ],
+          "unique": true,
+          "name": "PublishedDocs_slug_version_key"
+        },
+        {
+          "columns": [
+            "collectionID"
+          ],
+          "unique": false,
+          "name": "PublishedDocs_collectionID_idx"
+        }
+      ]
+    },
+    "Shortcode": {
+      "name": "Shortcode",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "request",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "creatorUid",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "createdOn",
+          "type": "timestamptz(3)",
+          "nullable": false,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "embedProperties",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "updatedOn",
+          "type": "timestamptz(3)",
+          "nullable": false,
+          "default": "current_timestamp"
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "columns": [
+            "creatorUid"
+          ],
+          "ref_table": "User",
+          "ref_columns": [
+            "uid"
+          ],
+          "name": "Shortcode_creatorUid_fkey",
+          "on_delete": "SET NULL",
+          "on_update": "CASCADE"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "id",
+            "creatorUid"
+          ],
+          "unique": true,
+          "name": "Shortcode_id_creatorUid_key"
+        }
+      ]
+    },
+    "Team": {
+      "name": "Team",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [],
+      "indexes": []
+    },
+    "TeamCollection": {
+      "name": "TeamCollection",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "parentID",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "teamID",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "orderIndex",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "createdOn",
+          "type": "timestamptz(3)",
+          "nullable": false,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "updatedOn",
+          "type": "timestamptz(3)",
+          "nullable": false
+        },
+        {
+          "name": "data",
+          "type": "jsonb",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "columns": [
+            "parentID"
+          ],
+          "ref_table": "TeamCollection",
+          "ref_columns": [
+            "id"
+          ],
+          "name": "TeamCollection_parentID_fkey",
+          "on_delete": "CASCADE",
+          "on_update": "CASCADE"
+        },
+        {
+          "columns": [
+            "teamID"
+          ],
+          "ref_table": "Team",
+          "ref_columns": [
+            "id"
+          ],
+          "name": "TeamCollection_teamID_fkey",
+          "on_delete": "CASCADE",
+          "on_update": "CASCADE"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "teamID",
+            "parentID",
+            "orderIndex"
+          ],
+          "unique": true,
+          "name": "TeamCollection_teamID_parentID_orderIndex_key"
+        },
+        {
+          "columns": [
+            "title gin_trgm_ops"
+          ],
+          "unique": false,
+          "name": "TeamCollection_title_trgm_idx"
+        }
+      ]
+    },
+    "TeamEnvironment": {
+      "name": "TeamEnvironment",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "teamID",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "variables",
+          "type": "jsonb",
+          "nullable": false
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "columns": [
+            "teamID"
+          ],
+          "ref_table": "Team",
+          "ref_columns": [
+            "id"
+          ],
+          "name": "TeamEnvironment_teamID_fkey",
+          "on_delete": "CASCADE",
+          "on_update": "CASCADE"
+        }
+      ],
+      "indexes": []
+    },
+    "TeamInvitation": {
+      "name": "TeamInvitation",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "teamID",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "creatorUid",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "inviteeEmail",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "inviteeRole",
+          "type": "teamaccessrole",
+          "nullable": false
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "columns": [
+            "teamID"
+          ],
+          "ref_table": "Team",
+          "ref_columns": [
+            "id"
+          ],
+          "name": "TeamInvitation_teamID_fkey",
+          "on_delete": "CASCADE",
+          "on_update": "CASCADE"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "teamID",
+            "inviteeEmail"
+          ],
+          "unique": true,
+          "name": "TeamInvitation_teamID_inviteeEmail_key"
+        },
+        {
+          "columns": [
+            "teamID"
+          ],
+          "unique": false,
+          "name": "TeamInvitation_teamID_idx"
+        }
+      ]
+    },
+    "TeamMember": {
+      "name": "TeamMember",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "role",
+          "type": "teamaccessrole",
+          "nullable": false
+        },
+        {
+          "name": "userUid",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "teamID",
+          "type": "text",
+          "nullable": false
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "columns": [
+            "teamID"
+          ],
+          "ref_table": "Team",
+          "ref_columns": [
+            "id"
+          ],
+          "name": "TeamMember_teamID_fkey",
+          "on_delete": "CASCADE",
+          "on_update": "CASCADE"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "teamID",
+            "userUid"
+          ],
+          "unique": true,
+          "name": "TeamMember_teamID_userUid_key"
+        }
+      ]
+    },
+    "TeamRequest": {
+      "name": "TeamRequest",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "collectionID",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "teamID",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "request",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "orderIndex",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "createdOn",
+          "type": "timestamptz(3)",
+          "nullable": false,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "updatedOn",
+          "type": "timestamptz(3)",
+          "nullable": false
+        },
+        {
+          "name": "mockExamples",
+          "type": "jsonb",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "columns": [
+            "collectionID"
+          ],
+          "ref_table": "TeamCollection",
+          "ref_columns": [
+            "id"
+          ],
+          "name": "TeamRequest_collectionID_fkey",
+          "on_delete": "CASCADE",
+          "on_update": "CASCADE"
+        },
+        {
+          "columns": [
+            "teamID"
+          ],
+          "ref_table": "Team",
+          "ref_columns": [
+            "id"
+          ],
+          "name": "TeamRequest_teamID_fkey",
+          "on_delete": "CASCADE",
+          "on_update": "CASCADE"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "teamID",
+            "collectionID",
+            "orderIndex"
+          ],
+          "unique": true,
+          "name": "TeamRequest_teamID_collectionID_orderIndex_key"
+        },
+        {
+          "columns": [
+            "mockExamples"
+          ],
+          "unique": false,
+          "name": "idx_mock_examples_team_requests_gin"
+        },
+        {
+          "columns": [
+            "title gin_trgm_ops"
+          ],
+          "unique": false,
+          "name": "TeamRequest_title_trgm_idx"
+        }
+      ]
+    },
+    "User": {
+      "name": "User",
+      "columns": [
+        {
+          "name": "uid",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "displayName",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "photoURL",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "isAdmin",
+          "type": "boolean",
+          "nullable": false,
+          "default": "false"
+        },
+        {
+          "name": "refreshToken",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "currentRESTSession",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "currentGQLSession",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "createdOn",
+          "type": "timestamptz(3)",
+          "nullable": false,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "lastLoggedOn",
+          "type": "timestamptz(3)",
+          "nullable": true
+        },
+        {
+          "name": "lastActiveOn",
+          "type": "timestamptz(3)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "uid"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "email"
+          ],
+          "unique": true,
+          "name": "User_email_key"
+        }
+      ]
+    },
+    "UserCollection": {
+      "name": "UserCollection",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "parentID",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "userUid",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "orderIndex",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "type",
+          "type": "reqtype",
+          "nullable": false
+        },
+        {
+          "name": "createdOn",
+          "type": "timestamptz(3)",
+          "nullable": false,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "updatedOn",
+          "type": "timestamptz(3)",
+          "nullable": false
+        },
+        {
+          "name": "data",
+          "type": "jsonb",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "columns": [
+            "parentID"
+          ],
+          "ref_table": "UserCollection",
+          "ref_columns": [
+            "id"
+          ],
+          "name": "UserCollection_parentID_fkey",
+          "on_delete": "CASCADE",
+          "on_update": "CASCADE"
+        },
+        {
+          "columns": [
+            "userUid"
+          ],
+          "ref_table": "User",
+          "ref_columns": [
+            "uid"
+          ],
+          "name": "UserCollection_userUid_fkey",
+          "on_delete": "CASCADE",
+          "on_update": "CASCADE"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "userUid",
+            "parentID",
+            "orderIndex"
+          ],
+          "unique": true,
+          "name": "UserCollection_userUid_parentID_orderIndex_key"
+        }
+      ]
+    },
+    "UserEnvironment": {
+      "name": "UserEnvironment",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "userUid",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "variables",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "isGlobal",
+          "type": "boolean",
+          "nullable": false
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "columns": [
+            "userUid"
+          ],
+          "ref_table": "User",
+          "ref_columns": [
+            "uid"
+          ],
+          "name": "UserEnvironment_userUid_fkey",
+          "on_delete": "CASCADE",
+          "on_update": "CASCADE"
+        }
+      ],
+      "indexes": []
+    },
+    "UserHistory": {
+      "name": "UserHistory",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "userUid",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "reqType",
+          "type": "reqtype",
+          "nullable": false
+        },
+        {
+          "name": "request",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "responseMetadata",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "isStarred",
+          "type": "boolean",
+          "nullable": false
+        },
+        {
+          "name": "executedOn",
+          "type": "timestamptz(3)",
+          "nullable": false,
+          "default": "current_timestamp"
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "columns": [
+            "userUid"
+          ],
+          "ref_table": "User",
+          "ref_columns": [
+            "uid"
+          ],
+          "name": "UserHistory_userUid_fkey",
+          "on_delete": "CASCADE",
+          "on_update": "CASCADE"
+        }
+      ],
+      "indexes": []
+    },
+    "UserRequest": {
+      "name": "UserRequest",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "collectionID",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "userUid",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "request",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "type",
+          "type": "reqtype",
+          "nullable": false
+        },
+        {
+          "name": "orderIndex",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "createdOn",
+          "type": "timestamptz(3)",
+          "nullable": false,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "updatedOn",
+          "type": "timestamptz(3)",
+          "nullable": false
+        },
+        {
+          "name": "mockExamples",
+          "type": "jsonb",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "columns": [
+            "collectionID"
+          ],
+          "ref_table": "UserCollection",
+          "ref_columns": [
+            "id"
+          ],
+          "name": "UserRequest_collectionID_fkey",
+          "on_delete": "CASCADE",
+          "on_update": "CASCADE"
+        },
+        {
+          "columns": [
+            "userUid"
+          ],
+          "ref_table": "User",
+          "ref_columns": [
+            "uid"
+          ],
+          "name": "UserRequest_userUid_fkey",
+          "on_delete": "CASCADE",
+          "on_update": "CASCADE"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "userUid",
+            "collectionID",
+            "orderIndex"
+          ],
+          "unique": true,
+          "name": "UserRequest_userUid_collectionID_orderIndex_key"
+        },
+        {
+          "columns": [
+            "mockExamples"
+          ],
+          "unique": false,
+          "name": "idx_mock_examples_user_requests_gin"
+        }
+      ]
+    },
+    "UserSettings": {
+      "name": "UserSettings",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "userUid",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "properties",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "updatedOn",
+          "type": "timestamptz(3)",
+          "nullable": false
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "columns": [
+            "userUid"
+          ],
+          "ref_table": "User",
+          "ref_columns": [
+            "uid"
+          ],
+          "name": "UserSettings_userUid_fkey",
+          "on_delete": "CASCADE",
+          "on_update": "CASCADE"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "userUid"
+          ],
+          "unique": true,
+          "name": "UserSettings_userUid_key"
+        }
+      ]
+    },
+    "VerificationToken": {
+      "name": "VerificationToken",
+      "columns": [
+        {
+          "name": "deviceIdentifier",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "token",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "userUid",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "expiresOn",
+          "type": "timestamptz(3)",
+          "nullable": false
+        }
+      ],
+      "primary_key": [],
+      "foreign_keys": [
+        {
+          "columns": [
+            "userUid"
+          ],
+          "ref_table": "User",
+          "ref_columns": [
+            "uid"
+          ],
+          "name": "VerificationToken_userUid_fkey",
+          "on_delete": "CASCADE",
+          "on_update": "CASCADE"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "deviceIdentifier",
+            "token"
+          ],
+          "unique": true,
+          "name": "VerificationToken_deviceIdentifier_token_key"
+        },
+        {
+          "columns": [
+            "token"
+          ],
+          "unique": true,
+          "name": "VerificationToken_token_key"
+        }
+      ]
+    }
+  },
+  "enums": {
+    "MockServerAction": [
+      "CREATED",
+      "DELETED",
+      "ACTIVATED",
+      "DEACTIVATED"
+    ],
+    "ReqType": [
+      "REST",
+      "GQL"
+    ],
+    "TeamAccessRole": [
+      "OWNER",
+      "VIEWER",
+      "EDITOR"
+    ],
+    "WorkspaceType": [
+      "USER",
+      "TEAM"
+    ]
+  }
+}
