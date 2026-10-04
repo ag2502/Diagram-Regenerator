@@ -1,0 +1,22 @@
+# Hooks for https://pre-commit.com. In your project's .pre-commit-config.yaml:
+#
+#   - repo: https://github.com/ag2502/Diagram-Regenerator
+#     rev: v0.1.0
+#     hooks:
+#       - id: diagram-regen-generate   # or diagram-regen-check to only verify
+#
+- id: diagram-regen-generate
+  name: regenerate schema docs
+  description: Rewrite the schema diagram, docs and snapshot when migrations change.
+  entry: diagram-regen generate --quiet
+  language: python
+  pass_filenames: false
+  files: \.(sql|toml|ya?ml)$
+
+- id: diagram-regen-check
+  name: check schema docs are current
+  description: Fail when the committed schema docs don't match the migrations.
+  entry: diagram-regen check --quiet
+  language: python
+  pass_filenames: false
+  files: \.(sql|toml|ya?ml)$
