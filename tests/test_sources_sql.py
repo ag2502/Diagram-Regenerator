@@ -438,3 +438,27 @@ def test_prisma_style_alters_are_salvaged():
     assert table.column("updatedOn").type == "timestamptz(3)"
     assert table.column("note").default == "'a,b'"
     assert table.column("n").type == "numeric(10,2)"
+
+
+def test_non_structural_alters_are_quiet():
+    result = _replay(
+        """
+        create table if not exists public.applications (
+            id uuid primary key default gen_random_uuid(),
+            user_id uuid not null references auth.users (id) on delete cascade
+        );
+        alter table public.applications enable row level security;
+        alter table public.applications force row level security;
+        alter table public.applications owner to postgres;
+        alter table public.applications disable trigger all;
+        alter table public.applications replica identity full;
+        alter table public.applications set (fillfactor = 70);
+        alter table public.applications validate constraint applications_user_id_fkey;
+        alter table public.applications enable row level security, add column note text;
+        create policy "own rows" on public.applications for select using (auth.uid() = user_id);
+        """
+    )
+    assert result.warnings == []
+    table = result.schema.get("applications")
+    assert [c.name for c in table.columns] == ["id", "user_id", "note"]
+    assert table.foreign_keys[0].ref_table == "auth.users"

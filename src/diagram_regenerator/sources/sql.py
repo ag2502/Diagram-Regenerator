@@ -329,6 +329,20 @@ _ALTER_PREFIX = re.compile(
     re.IGNORECASE | re.DOTALL,
 )
 _USING_CLAUSE = re.compile(r"\s+using\s+.*$", re.IGNORECASE | re.DOTALL)
+# ALTER TABLE actions that leave columns, keys and indexes as they were
+# (Supabase schemas, for one, enable row-level security on every table).
+_NON_STRUCTURAL = re.compile(
+    r"^(?:(?:enable|disable|force|no\s+force)\s+row\s+level\s+security"
+    r"|owner\s+to\b"
+    r"|(?:enable|disable)\s+(?:always\s+|replica\s+)?(?:trigger|rule)\b"
+    r"|replica\s+identity\b"
+    r"|cluster\s+on\b|set\s+without\s+cluster\b"
+    r"|set\s+(?:logged|unlogged|tablespace|access\s+method|schema)\b"
+    r"|(?:set|reset)\s*\("
+    r"|validate\s+constraint\b"
+    r"|(?:no\s+)?inherit\b)",
+    re.IGNORECASE,
+)
 _SCHEMA_CHANGE_HINT = re.compile(r"\b(create|alter|drop)\s+table\b", re.IGNORECASE)
 _DDL_KEYWORDS = re.compile(r"^\s*(create|alter|drop)\s+(table|index|unique\s+index)\b", re.I)
 
@@ -391,6 +405,8 @@ class _Replayer:
             for action in actions:
                 self.apply(f"{prefix} {action}", where)
             return True
+        if _NON_STRUCTURAL.match(rest.strip()):
+            return True  # nothing to model, nothing to warn about
         stripped = _USING_CLAUSE.sub("", rest)
         if stripped != rest:
             self.apply(f"{prefix} {stripped}", where)
