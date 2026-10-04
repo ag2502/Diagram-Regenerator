@@ -66,5 +66,7 @@ def render(schema: Schema, fmt: str, markdown: MarkdownOptions | None = None) ->
     if fmt == "dbml":
         return render_dbml(schema)
     if fmt == "html":
-        return render_html(schema, title=markdown.title, source=markdown.source)
+        return render_html(
+            schema, title=markdown.title, source=markdown.source, fingerprint=markdown.fingerprint
+        )
     return schema.to_json()

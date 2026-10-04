@@ -154,6 +154,7 @@ class Project:
             raise ConfigError("no outputs configured: set at least one path under [output]")
         documented = self.descriptions().apply(schema)
         options = self.markdown_options()
+        options.fingerprint = schema.fingerprint()
         rendered = []
         for fmt, path in files.items():
             content = render(schema if fmt == "json" else documented, fmt, options)

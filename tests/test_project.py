@@ -245,6 +245,7 @@ def test_project_outputs_and_labels(tmp_path, monkeypatch):
     assert "Login address" in outputs["markdown"].content
     assert "Login address" not in outputs["json"].content  # snapshot stays a pure schema
     assert "source `schema.sql`" in outputs["markdown"].content
+    assert f"fingerprint `{schema.fingerprint()}`" in outputs["markdown"].content
     assert all(o.stale for o in outputs.values())
     assert outputs["json"].write() and not outputs["json"].write()
     assert (

@@ -88,7 +88,12 @@ def _table_card(schema: Schema, table: Table) -> str:
     )
 
 
-def render_html(schema: Schema, title: str = "Database schema", source: str | None = None) -> str:
+def render_html(
+    schema: Schema,
+    title: str = "Database schema",
+    source: str | None = None,
+    fingerprint: str | None = None,
+) -> str:
     tables = schema.sorted_tables()
     overview = render_mermaid(
         schema, MermaidOptions(columns=overview_columns(len(tables), "auto"), comments=False)
@@ -112,7 +117,7 @@ def render_html(schema: Schema, title: str = "Database schema", source: str | No
     subtitle = f"{len(tables)} tables · {schema.column_count} columns"
     if source:
         subtitle += f" · {_e(source)}"
-    subtitle += f" · fingerprint {schema.fingerprint()}"
+    subtitle += f" · fingerprint {fingerprint or schema.fingerprint()}"
     return _PAGE.format(
         title=_e(title),
         subtitle=subtitle,

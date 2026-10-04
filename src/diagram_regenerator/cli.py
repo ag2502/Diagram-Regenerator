@@ -354,6 +354,7 @@ def cmd_render(args: argparse.Namespace) -> int:
     fmt = canonical_format(args.format)
     documented = schema if fmt == "json" else project.descriptions().apply(schema)
     options = project.markdown_options(project.describe(args.target) if args.target else None)
+    options.fingerprint = schema.fingerprint()
     _write_or_print(render(documented, fmt, options), args.output)
     return EXIT_OK
 

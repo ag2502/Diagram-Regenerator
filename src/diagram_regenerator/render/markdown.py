@@ -30,6 +30,8 @@ class MarkdownOptions:
     layout: str | None = None
     groups: dict[str, list[str]] = field(default_factory=dict)
     regenerate_hint: str = "diagram-regen generate"
+    # Fingerprint of the bare schema; descriptions don't change what the schema is.
+    fingerprint: str | None = None
 
 
 def overview_columns(table_count: int, mode: str) -> str:
@@ -87,7 +89,7 @@ def render_markdown(schema: Schema, options: MarkdownOptions | None = None) -> s
     stats = f"**{len(tables)} tables · {schema.column_count} columns**"
     if options.source:
         stats += f" · source `{options.source}`"
-    stats += f" · fingerprint `{schema.fingerprint()}`"
+    stats += f" · fingerprint `{options.fingerprint or schema.fingerprint()}`"
     out += [stats, ""]
     out += [
         f"> Regenerate with `{options.regenerate_hint}`. Column descriptions come from database "
