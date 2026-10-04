@@ -135,11 +135,11 @@ class Project:
         except ValueError as exc:
             raise ConfigError(str(exc)) from exc
 
-    def markdown_options(self) -> MarkdownOptions:
+    def markdown_options(self, source_label: str | None = None) -> MarkdownOptions:
         output = self.config.output
         return MarkdownOptions(
             title=output.title,
-            source=self.describe(),
+            source=source_label or self.describe(),
             diagram=output.diagram,
             comments_in_diagram=output.comments_in_diagram,
             layout=output.layout,
