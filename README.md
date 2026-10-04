@@ -61,20 +61,125 @@ _(Diagram trimmed for this page; the [full comment](examples/quickstart/sample-p
 
 </details>
 
-## Quick start
+## Install once, use in every project
+
+Diagram Regenerator is a command-line tool, like Prettier or Black: install it once and the
+`diagram-regen` command works in every project folder. With [uv](https://docs.astral.sh/uv/):
 
 ```bash
-pip install "diagram-regenerator @ git+https://github.com/ag2502/Diagram-Regenerator@v0.1.0"
-
-cd your-project
-diagram-regen init       # finds your migrations and their dialect, writes diagram-regen.toml
-diagram-regen generate   # writes docs/schema/README.md (diagram + data dictionary) and schema.json
-diagram-regen init-ci    # adds a GitHub workflow: PR comments + docs that update on merge
-git add diagram-regen.toml docs/schema .github && git commit -m "Add schema docs"
+uv tool install "diagram-regenerator[postgres,mysql,llm] @ git+https://github.com/ag2502/Diagram-Regenerator@v0.1.1"
+diagram-regen --version
 ```
 
-Database drivers are optional extras: `diagram-regenerator[postgres]`, `[mysql]`; Claude
-drafting is `[llm]`. Python 3.10 or newer.
+`pipx install "…same text…"` works the same way. The extras are optional: `postgres` and
+`mysql` add database drivers, `llm` adds Claude-drafted descriptions. SQL migration files and
+SQLite need no extras. Python 3.10 or newer.
+
+- **Upgrade:** run the install command again with the new tag (`@v0.1.2`, …) and `--force`.
+- **Uninstall:** `uv tool uninstall diagram-regenerator`.
+- **Teammates and CI:** nothing to install; the GitHub Action (step 5 below) runs it for them.
+
+## Step-by-step: add it to your project
+
+**1. Go to the project.**
+
+```bash
+cd ~/code/my-app
+```
+
+**2. Create the config.** `init` looks for your schema and its SQL dialect and writes a
+commented `diagram-regen.toml`:
+
+```bash
+diagram-regen init
+```
+
+It finds migration folders (`prisma/migrations`, `db/migrations`, `migrations`,
+`supabase/migrations`, Flyway's `src/main/resources/db/migration`, …) and schema files
+(`schema.sql`, `db/structure.sql`). If it finds nothing, or the wrong thing, set `source` in
+`diagram-regen.toml` yourself:
+
+| Your project keeps its schema in… | Set `source` to |
+| --- | --- |
+| SQL migration files | `"db/migrations"` (the folder) |
+| One schema file, e.g. Supabase's SQL editor script | `"schema.sql"` |
+| A SQLite file | `"sqlite:///data/app.db"` |
+| A database (Django, Alembic, Rails, Knex…) | `"${DATABASE_URL}"`, read from the environment |
+| SQLAlchemy models | `"python:myapp.models:Base"` |
+
+**3. Generate the docs.**
+
+```bash
+diagram-regen generate
+```
+
+This writes `docs/schema/README.md` (the diagram and a table per database table) and
+`docs/schema/schema.json` (the snapshot later changes are compared against). Any warnings
+point at the exact `file:line` that couldn't be read.
+
+**4. Look at it.** GitHub draws the diagram as soon as you push. To see it locally, add
+`html = "docs/schema/index.html"` under `[output]` in the config, run `generate` again, then
+`open docs/schema/index.html`. VS Code's Markdown preview shows the diagram only with a
+Mermaid extension.
+
+**5. Commit it, and let GitHub keep it current.**
+
+```bash
+diagram-regen init-ci            # writes .github/workflows/schema-docs.yml
+git add diagram-regen.toml docs/schema .github
+git commit -m "Add database schema docs"
+git push
+```
+
+From now on, every pull request that touches the schema gets a comment rating each change,
+and every merge to `main` regenerates the docs. The workflow requests the permissions it
+needs; if your organization limits Actions to read-only tokens, an admin has to allow write
+access. If `main` only accepts changes through pull requests, set `commit: false` on the
+update step and run `diagram-regen generate` in your branches instead.
+
+**6. Day to day.** After writing a migration:
+
+```bash
+diagram-regen diff       # what does it change, and is any of it breaking?
+diagram-regen generate   # update the docs (or let the merge do it)
+```
+
+Optional extras, in any order:
+
+- `diagram-regen describe` drafts column descriptions into `docs/schema/descriptions.yml`
+  for you to review (`--provider heuristic` works offline; Claude needs `ANTHROPIC_API_KEY`).
+- Add `[environments]` to the config and run `diagram-regen drift` to compare live databases
+  with your migrations (`diagram-regen init-ci --drift` schedules it with Slack alerts).
+- Add the [pre-commit hook](#pre-commit) to regenerate the docs on every commit.
+
+### Projects with more than one database
+
+Give each database its own config file and output folder, and pass it with `-c`. For
+example, a Supabase app schema plus a local SQLite crawler database:
+
+```toml
+# diagram-regen.toml (picked up automatically)
+source = "schema.sql"
+dialect = "postgresql"
+```
+
+```toml
+# diagram-regen.crawler.toml
+source = "sqlite:///data/crawler.db"
+descriptions = "docs/crawler-schema/descriptions.yml"
+
+[output]
+snapshot = "docs/crawler-schema/schema.json"
+markdown = "docs/crawler-schema/README.md"
+title = "Crawler database"
+```
+
+```bash
+diagram-regen generate                              # the app schema
+diagram-regen generate -c diagram-regen.crawler.toml  # the crawler database
+```
+
+For a quick look without any config: `diagram-regen render sqlite:///data/crawler.db -f html -o crawler.html`.
 
 ## Where the schema comes from
 
