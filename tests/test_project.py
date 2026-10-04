@@ -252,6 +252,12 @@ def test_project_outputs_and_labels(tmp_path, monkeypatch):
         project.describe("postgresql://u:secret@db.internal:5432/app") == "postgresql database app"
     )
     assert project.relative(tmp_path / "a" / "b.md") == "a/b.md"
+    config.output.source_label = "Production"
+    assert project.markdown_options().source == "Production"
+    assert (
+        parse_config({"output": {"source_label": "Prod"}}, root=tmp_path).output.source_label
+        == "Prod"
+    )
 
 
 def test_project_env_source(tmp_path, monkeypatch):
