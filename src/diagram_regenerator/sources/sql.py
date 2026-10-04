@@ -323,6 +323,12 @@ _ADD_IDENTITY = re.compile(
     r"^\s*alter\s+table\s+(?:if\s+exists\s+)?(?:only\s+)?(\S+)\s+alter\s+(?:column\s+)?(\S+)\s+add\s+generated\b",
     re.IGNORECASE,
 )
+_IDENT = r'(?:"(?:[^"]|"")*"|`[^`]*`|\[[^\]]*\]|[\w$]+)'
+_ALTER_PREFIX = re.compile(
+    rf"^(\s*alter\s+table\s+(?:if\s+exists\s+)?(?:only\s+)?{_IDENT}(?:\s*\.\s*{_IDENT})*)\s+(.*)$",
+    re.IGNORECASE | re.DOTALL,
+)
+_USING_CLAUSE = re.compile(r"\s+using\s+.*$", re.IGNORECASE | re.DOTALL)
 _SCHEMA_CHANGE_HINT = re.compile(r"\b(create|alter|drop)\s+table\b", re.IGNORECASE)
 _DDL_KEYWORDS = re.compile(r"^\s*(create|alter|drop)\s+(table|index|unique\s+index)\b", re.I)
 
@@ -350,10 +356,14 @@ class _Replayer:
         try:
             tree = sqlglot.parse_one(statement, read=self.read)
         except SqlglotError as exc:
+            if self._retry_alter(statement, where):
+                return
             if _DDL_KEYWORDS.match(statement):
                 self.warn(where, f"could not parse statement, skipped ({_first_line(exc)})")
             return
         if tree is None:
+            return
+        if isinstance(tree, exp.Command) and self._retry_alter(statement, where):
             return
         if self.dialect == "sqlite":
             self.declared_types = _declared_types(statement, self.read)
@@ -363,6 +373,29 @@ class _Replayer:
             self.warn(where, str(skip))
         except Exception as exc:  # an AST shape we haven't met; keep going
             self.warn(where, f"statement skipped ({type(exc).__name__}: {exc})")
+
+    def _retry_alter(self, statement: str, where: str) -> bool:
+        """Salvage an ALTER TABLE the parser rejected as a whole.
+
+        Real migrations mix action kinds in one statement (``DROP COLUMN a, ADD
+        COLUMN b``) and convert data with ``USING ... AT TIME ZONE``; sqlglot
+        handles neither. Each action is applied on its own, and a ``USING``
+        clause (how existing rows convert, not what the schema becomes) is dropped.
+        """
+        match = _ALTER_PREFIX.match(statement)
+        if not match:
+            return False
+        prefix, rest = match.group(1).strip(), match.group(2)
+        actions = [part.strip() for part in _split_top_level(rest) if part.strip()]
+        if len(actions) > 1:
+            for action in actions:
+                self.apply(f"{prefix} {action}", where)
+            return True
+        stripped = _USING_CLAUSE.sub("", rest)
+        if stripped != rest:
+            self.apply(f"{prefix} {stripped}", where)
+            return True
+        return False
 
     def warn(self, where: str, message: str) -> None:
         self.warnings.append(f"{where}: {message}")
@@ -977,6 +1010,30 @@ class _Replayer:
                     target = self.find_table(fk.ref_table)
                     fk.ref_columns = list(target.primary_key) if target else []
             table.canonicalize()
+
+
+def _split_top_level(text: str, separator: str = ",") -> list[str]:
+    """Split on ``separator`` outside parentheses and quotes."""
+    parts, current, depth, quote = [], [], 0, None
+    for char in text:
+        if quote:
+            current.append(char)
+            if char == quote:
+                quote = None
+            continue
+        if char in "'\"`":
+            quote = char
+        elif char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+        elif char == separator and depth == 0:
+            parts.append("".join(current))
+            current = []
+            continue
+        current.append(char)
+    parts.append("".join(current))
+    return parts
 
 
 class _Skip(Exception):

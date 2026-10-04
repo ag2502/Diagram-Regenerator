@@ -410,3 +410,31 @@ def test_load_single_file(tmp_path):
 def test_missing_path():
     with pytest.raises(FileNotFoundError):
         parse_sql_path("/definitely/not/here")
+
+
+def test_prisma_style_alters_are_salvaged():
+    result = _replay(
+        """
+        CREATE TABLE "InfraConfig" ("id" TEXT NOT NULL, "active" BOOLEAN, "createdOn" TIMESTAMP(3),
+            "updatedOn" TIMESTAMP(3), CONSTRAINT "InfraConfig_pkey" PRIMARY KEY ("id"));
+        ALTER TABLE "InfraConfig" DROP COLUMN "active",
+        ADD COLUMN     "lastSyncedEnvFileValue" TEXT;
+        ALTER TABLE "InfraConfig" ALTER COLUMN "createdOn" SET DATA TYPE TIMESTAMPTZ(3) USING "createdOn" AT TIME ZONE 'UTC',
+        ALTER COLUMN "updatedOn" SET DATA TYPE TIMESTAMPTZ(3) USING "updatedOn" AT TIME ZONE 'UTC';
+        ALTER TABLE public."InfraConfig" ADD COLUMN "note" TEXT DEFAULT 'a,b', ADD COLUMN "n" NUMERIC(10, 2);
+        """
+    )
+    assert result.warnings == []
+    table = result.schema.get("InfraConfig")
+    assert [c.name for c in table.columns] == [
+        "id",
+        "createdOn",
+        "updatedOn",
+        "lastSyncedEnvFileValue",
+        "note",
+        "n",
+    ]
+    assert table.column("createdOn").type == "timestamptz(3)"
+    assert table.column("updatedOn").type == "timestamptz(3)"
+    assert table.column("note").default == "'a,b'"
+    assert table.column("n").type == "numeric(10,2)"
