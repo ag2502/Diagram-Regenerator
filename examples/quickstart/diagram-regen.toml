@@ -1,0 +1,20 @@
+# Example project: a small SaaS app (organisations, projects, billing).
+source = "db/migrations"
+dialect = "postgresql"
+
+descriptions = "docs/schema/descriptions.yml"
+
+[output]
+snapshot = "docs/schema/schema.json"
+markdown = "docs/schema/README.md"
+html = "docs/schema/index.html"
+dbml = "docs/schema/schema.dbml"
+title = "Taskboard database"
+
+[groups]
+Accounts = ["organizations", "users", "memberships"]
+Work = ["projects", "tasks", "comments"]
+Billing = ["subscriptions", "invoices"]
+
+[diff]
+fail_on = "breaking"

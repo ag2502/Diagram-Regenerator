@@ -1,0 +1,83 @@
+# Table and column descriptions used in the generated schema docs.
+# Edit freely: `diagram-regen describe` only adds missing entries and never
+# overwrites yours. Entries starting with "[draft]" were suggested
+# automatically; delete the prefix once a person has checked them.
+# (Comments other than this header are not preserved when the file is updated.)
+tables:
+  audit_events:
+    description: Append-only log of security-relevant actions, kept for 400 days.
+    columns:
+      id: Primary key.
+      organization_id: Organization the event belongs to; events are deleted with it.
+      actor_id: User who performed the action; NULL for system jobs or deleted users.
+      action: Dotted event name, e.g. member.invited or project.archived.
+      payload: Event-specific details as JSON; never contains secrets.
+      created_at: When the action happened.
+  comments:
+    description: Discussion on a task, newest last.
+    columns:
+      id: Primary key.
+      task_id: Task being discussed; comments are deleted with it.
+      author_id: User who wrote the comment.
+      body: Comment text in Markdown.
+      created_at: When the comment was posted.
+  invoices:
+    columns:
+      id: Primary key.
+      subscription_id: Subscription this invoice bills.
+      amount_cents: Total charged, in the smallest unit of the currency.
+      currency: ISO 4217 currency code.
+      issued_at: When Stripe issued the invoice.
+      paid_at: When payment succeeded; NULL while unpaid.
+  memberships:
+    description: Which users belong to which organizations, and their role there.
+    columns:
+      organization_id: Organization joined; memberships are deleted with it.
+      user_id: Member; memberships are deleted with the user.
+      role: Permission level inside the organization.
+      joined_at: When the user accepted the invitation.
+  organizations:
+    description: Customer workspaces; every project and subscription belongs to one.
+    columns:
+      id: Primary key.
+      slug: Unique URL name, e.g. acme in app.example.com/acme.
+      name: Display name shown in the app.
+      created_at: When the organization was created.
+  projects:
+    columns:
+      id: Primary key.
+      organization_id: Owning organization; projects are deleted with it.
+      name: Project name, unique per organization by convention only.
+      archived_at: When the project was archived; NULL while active.
+      created_at: When the project was created.
+  subscriptions:
+    description: The paid plan of an organization (at most one each).
+    columns:
+      id: Primary key.
+      organization_id: Subscribing organization.
+      stripe_customer_id: Stripe customer ID (cus_...).
+      seats: Number of paid seats.
+      renews_on: Next renewal date; NULL when the plan is cancelled.
+  tasks:
+    description: Units of work inside a project.
+    columns:
+      id: Primary key.
+      project_id: Project the task belongs to; tasks are deleted with it.
+      title: Short summary shown on the board.
+      status: Board column the task is in.
+      assignee_id: '[draft] References users.id; cleared when it is deleted.'
+      created_by: User who created the task.
+      created_at: When the task was created.
+      updated_at: '[draft] When the task was last updated.'
+      due_on: Deadline; NULL when there is none.
+      priority: 1 (urgent) to 4 (someday); 2 is the default.
+  users:
+    description: People who can sign in.
+    columns:
+      id: Primary key.
+      email: Sign-in address; unique across all users.
+      display_name: Name shown to teammates.
+      password_hash: Argon2id hash of the password.
+      is_verified: Whether the email address has been confirmed.
+      created_at: When the account was created.
+      deleted_at: When the account was deleted; NULL while active (soft delete).

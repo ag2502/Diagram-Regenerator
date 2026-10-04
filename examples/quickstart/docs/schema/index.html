@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Taskboard database</title>
+<style>
+:root {
+  --bg: #f7f7f5; --panel: #ffffff; --ink: #1d1f23; --muted: #626872; --line: #e2e2de;
+  --accent: #2557d6; --pk: #8a5a00; --fk: #2557d6; --uk: #6b3fb3; --draft: #a34d00;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #15171b; --panel: #1d2026; --ink: #e8e9ec; --muted: #9aa0aa; --line: #2e323a;
+    --accent: #7aa2ff; --pk: #e2b45c; --fk: #7aa2ff; --uk: #b99af0; --draft: #f0a35c;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { padding: 16px 20px; border-bottom: 1px solid var(--line); background: var(--panel); }
+header h1 { margin: 0; font-size: 18px; }
+header p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+.layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); min-height: calc(100vh - 66px); }
+aside { border-right: 1px solid var(--line); background: var(--panel); padding: 12px;
+  position: sticky; top: 0; height: 100vh; overflow: auto; }
+aside input { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--bg); color: var(--ink); font: inherit; }
+aside ul { list-style: none; margin: 10px 0 0; padding: 0; }
+aside li { display: flex; justify-content: space-between; gap: 8px; padding: 3px 4px; border-radius: 4px; }
+aside li.active { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+aside a { color: var(--ink); text-decoration: none; overflow-wrap: anywhere; }
+aside small { color: var(--muted); }
+main { padding: 16px 20px; min-width: 0; }
+.toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+.toolbar strong { margin-right: auto; }
+button { font: inherit; padding: 4px 10px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--panel); color: var(--ink); cursor: pointer; }
+button:hover { border-color: var(--accent); }
+#viewport { height: 60vh; min-height: 320px; overflow: hidden; border: 1px solid var(--line);
+  border-radius: 8px; background: var(--panel); cursor: grab; position: relative; }
+#viewport.dragging { cursor: grabbing; }
+#canvas { transform-origin: 0 0; position: absolute; top: 0; left: 0; }
+#status { color: var(--muted); padding: 16px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+  padding: 12px 16px; margin: 16px 0; scroll-margin-top: 12px; }
+.card.hidden, aside li.hidden { display: none; }
+.card h3 { margin: 0 0 8px; font-size: 16px; display: flex; justify-content: space-between; gap: 8px; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+code { font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; }
+a { color: var(--accent); }
+.key { font: 600 11px ui-monospace, monospace; padding: 0 4px; border-radius: 3px;
+  border: 1px solid currentColor; }
+.pk { color: var(--pk); } .fk { color: var(--fk); } .uk { color: var(--uk); }
+.draft { color: var(--draft); font-size: 11px; font-weight: 600; text-transform: uppercase; }
+@media (max-width: 760px) {
+  .layout { grid-template-columns: 1fr; }
+  aside { position: static; height: auto; max-height: 40vh; border-right: 0; border-bottom: 1px solid var(--line); }
+  main { padding: 12px 16px; }
+}
+</style>
+</head>
+<body>
+<header><h1>Taskboard database</h1><p>9 tables · 52 columns · db/migrations · fingerprint 93ff77df6c18</p></header>
+<div class="layout">
+<aside>
+  <input id="filter" type="search" placeholder="Filter tables…" aria-label="Filter tables">
+  <ul id="list"><li><a href="#t-audit_events" data-focus="audit_events">audit_events</a><small>6</small></li><li><a href="#t-comments" data-focus="comments">comments</a><small>5</small></li><li><a href="#t-invoices" data-focus="invoices">invoices</a><small>6</small></li><li><a href="#t-memberships" data-focus="memberships">memberships</a><small>4</small></li><li><a href="#t-organizations" data-focus="organizations">organizations</a><small>4</small></li><li><a href="#t-projects" data-focus="projects">projects</a><small>5</small></li><li><a href="#t-subscriptions" data-focus="subscriptions">subscriptions</a><small>5</small></li><li><a href="#t-tasks" data-focus="tasks">tasks</a><small>10</small></li><li><a href="#t-users" data-focus="users">users</a><small>7</small></li></ul>
+</aside>
+<main>
+  <div class="toolbar">
+    <strong id="view-label">All tables</strong>
+    <button type="button" id="show-all">Show all</button>
+    <button type="button" id="zoom-out" aria-label="Zoom out">−</button>
+    <button type="button" id="zoom-in" aria-label="Zoom in">+</button>
+    <button type="button" id="fit">Fit</button>
+  </div>
+  <div id="viewport"><div id="canvas"><p id="status">Rendering diagram…</p></div></div>
+  <section class="card" id="t-audit_events" data-table="audit_events"><h3><span>audit_events</span> <button type="button" data-focus="audit_events">Focus</button></h3><p>Append-only log of security-relevant actions, kept for 400 days.</p><div class="scroll"><table><thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Default</th><th>Keys</th><th>Description</th></tr></thead><tbody><tr><td><code>id</code></td><td><code>bigint</code></td><td></td><td>auto-increment</td><td><span class="key pk">PK</span></td><td>Primary key.</td></tr><tr><td><code>organization_id</code></td><td><code>bigint</code></td><td></td><td></td><td><span class="key fk">FK</span> <a href="#t-organizations" data-focus="organizations">organizations</a></td><td>Organization the event belongs to; events are deleted with it.</td></tr><tr><td><code>actor_id</code></td><td><code>bigint</code></td><td>yes</td><td></td><td><span class="key fk">FK</span> <a href="#t-users" data-focus="users">users</a></td><td>User who performed the action; NULL for system jobs or deleted users.</td></tr><tr><td><code>action</code></td><td><code>text</code></td><td></td><td></td><td></td><td>Dotted event name, e.g. member.invited or project.archived.</td></tr><tr><td><code>payload</code></td><td><code>jsonb</code></td><td></td><td><code>&#x27;{}&#x27;</code></td><td></td><td>Event-specific details as JSON; never contains secrets.</td></tr><tr><td><code>created_at</code></td><td><code>timestamptz</code></td><td></td><td><code>current_timestamp</code></td><td></td><td>When the action happened.</td></tr></tbody></table></div><p><strong>Indexes:</strong> <code>ix_audit_org_created</code> (organization_id, created_at)</p></section><section class="card" id="t-comments" data-table="comments"><h3><span>comments</span> <button type="button" data-focus="comments">Focus</button></h3><p>Discussion on a task, newest last.</p><div class="scroll"><table><thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Default</th><th>Keys</th><th>Description</th></tr></thead><tbody><tr><td><code>id</code></td><td><code>bigint</code></td><td></td><td>auto-increment</td><td><span class="key pk">PK</span></td><td>Primary key.</td></tr><tr><td><code>task_id</code></td><td><code>bigint</code></td><td></td><td></td><td><span class="key fk">FK</span> <a href="#t-tasks" data-focus="tasks">tasks</a></td><td>Task being discussed; comments are deleted with it.</td></tr><tr><td><code>author_id</code></td><td><code>bigint</code></td><td></td><td></td><td><span class="key fk">FK</span> <a href="#t-users" data-focus="users">users</a></td><td>User who wrote the comment.</td></tr><tr><td><code>body</code></td><td><code>text</code></td><td></td><td></td><td></td><td>Comment text in Markdown.</td></tr><tr><td><code>created_at</code></td><td><code>timestamptz</code></td><td></td><td><code>current_timestamp</code></td><td></td><td>When the comment was posted.</td></tr></tbody></table></div></section><section class="card" id="t-invoices" data-table="invoices"><h3><span>invoices</span> <button type="button" data-focus="invoices">Focus</button></h3><p>One row per billing period, mirrored from Stripe.</p><div class="scroll"><table><thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Default</th><th>Keys</th><th>Description</th></tr></thead><tbody><tr><td><code>id</code></td><td><code>bigint</code></td><td></td><td>auto-increment</td><td><span class="key pk">PK</span></td><td>Primary key.</td></tr><tr><td><code>subscription_id</code></td><td><code>bigint</code></td><td></td><td></td><td><span class="key fk">FK</span> <a href="#t-subscriptions" data-focus="subscriptions">subscriptions</a></td><td>Subscription this invoice bills.</td></tr><tr><td><code>amount_cents</code></td><td><code>integer</code></td><td></td><td></td><td></td><td>Total charged, in the smallest unit of the currency.</td></tr><tr><td><code>currency</code></td><td><code>char(3)</code></td><td></td><td><code>&#x27;USD&#x27;</code></td><td></td><td>ISO 4217 currency code.</td></tr><tr><td><code>issued_at</code></td><td><code>timestamptz</code></td><td></td><td><code>current_timestamp</code></td><td></td><td>When Stripe issued the invoice.</td></tr><tr><td><code>paid_at</code></td><td><code>timestamptz</code></td><td>yes</td><td></td><td></td><td>When payment succeeded; NULL while unpaid.</td></tr></tbody></table></div></section><section class="card" id="t-memberships" data-table="memberships"><h3><span>memberships</span> <button type="button" data-focus="memberships">Focus</button></h3><p>Which users belong to which organizations, and their role there.</p><div class="scroll"><table><thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Default</th><th>Keys</th><th>Description</th></tr></thead><tbody><tr><td><code>organization_id</code></td><td><code>bigint</code></td><td></td><td></td><td><span class="key pk">PK</span> <span class="key fk">FK</span> <a href="#t-organizations" data-focus="organizations">organizations</a></td><td>Organization joined; memberships are deleted with it.</td></tr><tr><td><code>user_id</code></td><td><code>bigint</code></td><td></td><td></td><td><span class="key pk">PK</span> <span class="key fk">FK</span> <a href="#t-users" data-focus="users">users</a></td><td>Member; memberships are deleted with the user.</td></tr><tr><td><code>role</code></td><td><code>member_role</code></td><td></td><td><code>&#x27;member&#x27;</code></td><td></td><td>Permission level inside the organization.</td></tr><tr><td><code>joined_at</code></td><td><code>timestamptz</code></td><td></td><td><code>current_timestamp</code></td><td></td><td>When the user accepted the invitation.</td></tr></tbody></table></div></section><section class="card" id="t-organizations" data-table="organizations"><h3><span>organizations</span> <button type="button" data-focus="organizations">Focus</button></h3><p>Customer workspaces; every project and subscription belongs to one.</p><div class="scroll"><table><thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Default</th><th>Keys</th><th>Description</th></tr></thead><tbody><tr><td><code>id</code></td><td><code>bigint</code></td><td></td><td>auto-increment</td><td><span class="key pk">PK</span></td><td>Primary key.</td></tr><tr><td><code>slug</code></td><td><code>varchar(64)</code></td><td></td><td></td><td><span class="key uk">UK</span></td><td>Unique URL name, e.g. acme in app.example.com/acme.</td></tr><tr><td><code>name</code></td><td><code>text</code></td><td></td><td></td><td></td><td>Display name shown in the app.</td></tr><tr><td><code>created_at</code></td><td><code>timestamptz</code></td><td></td><td><code>current_timestamp</code></td><td></td><td>When the organization was created.</td></tr></tbody></table></div><p><strong>Indexes:</strong> unique <code>organizations_slug_key</code> (slug)</p><p><strong>Referenced by:</strong> <a href="#t-audit_events" data-focus="audit_events">audit_events</a>.organization_id, <a href="#t-memberships" data-focus="memberships">memberships</a>.organization_id, <a href="#t-projects" data-focus="projects">projects</a>.organization_id, <a href="#t-subscriptions" data-focus="subscriptions">subscriptions</a>.organization_id</p></section><section class="card" id="t-projects" data-table="projects"><h3><span>projects</span> <button type="button" data-focus="projects">Focus</button></h3><div class="scroll"><table><thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Default</th><th>Keys</th><th>Description</th></tr></thead><tbody><tr><td><code>id</code></td><td><code>bigint</code></td><td></td><td>auto-increment</td><td><span class="key pk">PK</span></td><td>Primary key.</td></tr><tr><td><code>organization_id</code></td><td><code>bigint</code></td><td></td><td></td><td><span class="key fk">FK</span> <a href="#t-organizations" data-focus="organizations">organizations</a></td><td>Owning organization; projects are deleted with it.</td></tr><tr><td><code>name</code></td><td><code>text</code></td><td></td><td></td><td></td><td>Project name, unique per organization by convention only.</td></tr><tr><td><code>archived_at</code></td><td><code>timestamptz</code></td><td>yes</td><td></td><td></td><td>When the project was archived; NULL while active.</td></tr><tr><td><code>created_at</code></td><td><code>timestamptz</code></td><td></td><td><code>current_timestamp</code></td><td></td><td>When the project was created.</td></tr></tbody></table></div><p><strong>Indexes:</strong> <code>ix_projects_org</code> (organization_id)</p><p><strong>Referenced by:</strong> <a href="#t-tasks" data-focus="tasks">tasks</a>.project_id</p></section><section class="card" id="t-subscriptions" data-table="subscriptions"><h3><span>subscriptions</span> <button type="button" data-focus="subscriptions">Focus</button></h3><p>The paid plan of an organization (at most one each).</p><div class="scroll"><table><thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Default</th><th>Keys</th><th>Description</th></tr></thead><tbody><tr><td><code>id</code></td><td><code>bigint</code></td><td></td><td>auto-increment</td><td><span class="key pk">PK</span></td><td>Primary key.</td></tr><tr><td><code>organization_id</code></td><td><code>bigint</code></td><td></td><td></td><td><span class="key fk">FK</span> <a href="#t-organizations" data-focus="organizations">organizations</a> <span class="key uk">UK</span></td><td>Subscribing organization.</td></tr><tr><td><code>stripe_customer_id</code></td><td><code>text</code></td><td></td><td></td><td></td><td>Stripe customer ID (cus_...).</td></tr><tr><td><code>seats</code></td><td><code>integer</code></td><td></td><td><code>1</code></td><td></td><td>Number of paid seats.</td></tr><tr><td><code>renews_on</code></td><td><code>date</code></td><td>yes</td><td></td><td></td><td>Next renewal date; NULL when the plan is cancelled.</td></tr></tbody></table></div><p><strong>Indexes:</strong> unique <code>subscriptions_organization_id_key</code> (organization_id)</p><p><strong>Referenced by:</strong> <a href="#t-invoices" data-focus="invoices">invoices</a>.subscription_id</p></section><section class="card" id="t-tasks" data-table="tasks"><h3><span>tasks</span> <button type="button" data-focus="tasks">Focus</button></h3><p>Units of work inside a project.</p><div class="scroll"><table><thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Default</th><th>Keys</th><th>Description</th></tr></thead><tbody><tr><td><code>id</code></td><td><code>bigint</code></td><td></td><td>auto-increment</td><td><span class="key pk">PK</span></td><td>Primary key.</td></tr><tr><td><code>project_id</code></td><td><code>bigint</code></td><td></td><td></td><td><span class="key fk">FK</span> <a href="#t-projects" data-focus="projects">projects</a></td><td>Project the task belongs to; tasks are deleted with it.</td></tr><tr><td><code>title</code></td><td><code>text</code></td><td></td><td></td><td></td><td>Short summary shown on the board.</td></tr><tr><td><code>status</code></td><td><code>task_status</code></td><td></td><td><code>&#x27;todo&#x27;</code></td><td></td><td>Board column the task is in.</td></tr><tr><td><code>assignee_id</code></td><td><code>bigint</code></td><td>yes</td><td></td><td><span class="key fk">FK</span> <a href="#t-users" data-focus="users">users</a></td><td><span class="draft">draft</span> References users.id; cleared when it is deleted.</td></tr><tr><td><code>created_by</code></td><td><code>bigint</code></td><td></td><td></td><td><span class="key fk">FK</span> <a href="#t-users" data-focus="users">users</a></td><td>User who created the task.</td></tr><tr><td><code>created_at</code></td><td><code>timestamptz</code></td><td></td><td><code>current_timestamp</code></td><td></td><td>When the task was created.</td></tr><tr><td><code>updated_at</code></td><td><code>timestamptz</code></td><td></td><td><code>current_timestamp</code></td><td></td><td><span class="draft">draft</span> When the task was last updated.</td></tr><tr><td><code>due_on</code></td><td><code>date</code></td><td>yes</td><td></td><td></td><td>Deadline; NULL when there is none.</td></tr><tr><td><code>priority</code></td><td><code>smallint</code></td><td></td><td><code>2</code></td><td></td><td>1 (urgent) to 4 (someday); 2 is the default.</td></tr></tbody></table></div><p><strong>Indexes:</strong> <code>ix_tasks_project_status</code> (project_id, status)</p><p><strong>Referenced by:</strong> <a href="#t-comments" data-focus="comments">comments</a>.task_id</p></section><section class="card" id="t-users" data-table="users"><h3><span>users</span> <button type="button" data-focus="users">Focus</button></h3><p>People who can sign in.</p><div class="scroll"><table><thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Default</th><th>Keys</th><th>Description</th></tr></thead><tbody><tr><td><code>id</code></td><td><code>bigint</code></td><td></td><td>auto-increment</td><td><span class="key pk">PK</span></td><td>Primary key.</td></tr><tr><td><code>email</code></td><td><code>varchar(320)</code></td><td></td><td></td><td><span class="key uk">UK</span></td><td>Sign-in address; unique across all users.</td></tr><tr><td><code>display_name</code></td><td><code>text</code></td><td></td><td></td><td></td><td>Name shown to teammates.</td></tr><tr><td><code>password_hash</code></td><td><code>text</code></td><td></td><td></td><td></td><td>Argon2id hash of the password.</td></tr><tr><td><code>is_verified</code></td><td><code>boolean</code></td><td></td><td><code>false</code></td><td></td><td>Whether the email address has been confirmed.</td></tr><tr><td><code>created_at</code></td><td><code>timestamptz</code></td><td></td><td><code>current_timestamp</code></td><td></td><td>When the account was created.</td></tr><tr><td><code>deleted_at</code></td><td><code>timestamptz</code></td><td>yes</td><td></td><td></td><td>When the account was deleted; NULL while active (soft delete).</td></tr></tbody></table></div><p><strong>Indexes:</strong> unique <code>users_email_key</code> (email)</p><p><strong>Referenced by:</strong> <a href="#t-audit_events" data-focus="audit_events">audit_events</a>.actor_id, <a href="#t-comments" data-focus="comments">comments</a>.author_id, <a href="#t-memberships" data-focus="memberships">memberships</a>.user_id, <a href="#t-tasks" data-focus="tasks">tasks</a>.assignee_id, <a href="#t-tasks" data-focus="tasks">tasks</a>.created_by</p></section>
+</main>
+</div>
+<script type="application/json" id="diagrams">{"overview": "erDiagram\n    audit_events {\n        bigint id PK\n        bigint organization_id FK\n        bigint actor_id FK\n        text action\n        jsonb payload\n        timestamptz created_at\n    }\n    comments {\n        bigint id PK\n        bigint task_id FK\n        bigint author_id FK\n        text body\n        timestamptz created_at\n    }\n    invoices {\n        bigint id PK\n        bigint subscription_id FK\n        integer amount_cents\n        char(3) currency\n        timestamptz issued_at\n        timestamptz paid_at\n    }\n    memberships {\n        bigint organization_id PK, FK\n        bigint user_id PK, FK\n        member_role role\n        timestamptz joined_at\n    }\n    organizations {\n        bigint id PK\n        varchar(64) slug UK\n        text name\n        timestamptz created_at\n    }\n    projects {\n        bigint id PK\n        bigint organization_id FK\n        text name\n        timestamptz archived_at\n        timestamptz created_at\n    }\n    subscriptions {\n        bigint id PK\n        bigint organization_id FK, UK\n        text stripe_customer_id\n        integer seats\n        date renews_on\n    }\n    tasks {\n        bigint id PK\n        bigint project_id FK\n        text title\n        task_status status\n        bigint assignee_id FK\n        bigint created_by FK\n        timestamptz created_at\n        timestamptz updated_at\n        date due_on\n        smallint priority\n    }\n    users {\n        bigint id PK\n        varchar(320) email UK\n        text display_name\n        text password_hash\n        boolean is_verified\n        timestamptz created_at\n        timestamptz deleted_at\n    }\n    users |o..o{ audit_events : \"actor_id\"\n    organizations ||..o{ audit_events : \"organization_id\"\n    users ||..o{ comments : \"author_id\"\n    tasks ||..o{ comments : \"task_id\"\n    subscriptions ||..o{ invoices : \"subscription_id\"\n    organizations ||--o{ memberships : \"organization_id\"\n    users ||--o{ memberships : \"user_id\"\n    organizations ||..o{ projects : \"organization_id\"\n    organizations ||..o| subscriptions : \"organization_id\"\n    users |o..o{ tasks : \"assignee_id\"\n    users ||..o{ tasks : \"created_by\"\n    projects ||..o{ tasks : \"project_id\"\n", "focus": {"audit_events": "erDiagram\n    audit_events {\n        bigint id PK\n        bigint organization_id FK\n        bigint actor_id FK\n        text action\n        jsonb payload\n        timestamptz created_at\n    }\n    organizations\n    users\n    users |o..o{ audit_events : \"actor_id\"\n    organizations ||..o{ audit_events : \"organization_id\"\n", "comments": "erDiagram\n    comments {\n        bigint id PK\n        bigint task_id FK\n        bigint author_id FK\n        text body\n        timestamptz created_at\n    }\n    tasks\n    users\n    users ||..o{ comments : \"author_id\"\n    tasks ||..o{ comments : \"task_id\"\n", "invoices": "erDiagram\n    invoices {\n        bigint id PK\n        bigint subscription_id FK\n        integer amount_cents\n        char(3) currency\n        timestamptz issued_at\n        timestamptz paid_at\n    }\n    subscriptions\n    subscriptions ||..o{ invoices : \"subscription_id\"\n", "memberships": "erDiagram\n    memberships {\n        bigint organization_id PK, FK\n        bigint user_id PK, FK\n        member_role role\n        timestamptz joined_at\n    }\n    organizations\n    users\n    organizations ||--o{ memberships : \"organization_id\"\n    users ||--o{ memberships : \"user_id\"\n", "organizations": "erDiagram\n    organizations {\n        bigint id PK\n        varchar(64) slug UK\n        text name\n        timestamptz created_at\n    }\n    audit_events\n    memberships\n    projects\n    subscriptions\n    organizations ||..o{ audit_events : \"organization_id\"\n    organizations ||--o{ memberships : \"organization_id\"\n    organizations ||..o{ projects : \"organization_id\"\n    organizations ||..o| subscriptions : \"organization_id\"\n", "projects": "erDiagram\n    projects {\n        bigint id PK\n        bigint organization_id FK\n        text name\n        timestamptz archived_at\n        timestamptz created_at\n    }\n    organizations\n    tasks\n    organizations ||..o{ projects : \"organization_id\"\n    projects ||..o{ tasks : \"project_id\"\n", "subscriptions": "erDiagram\n    subscriptions {\n        bigint id PK\n        bigint organization_id FK, UK\n        text stripe_customer_id\n        integer seats\n        date renews_on\n    }\n    invoices\n    organizations\n    organizations ||..o| subscriptions : \"organization_id\"\n    subscriptions ||..o{ invoices : \"subscription_id\"\n", "tasks": "erDiagram\n    tasks {\n        bigint id PK\n        bigint project_id FK\n        text title\n        task_status status\n        bigint assignee_id FK\n        bigint created_by FK\n        timestamptz created_at\n        timestamptz updated_at\n        date due_on\n        smallint priority\n    }\n    comments\n    projects\n    users\n    users |o..o{ tasks : \"assignee_id\"\n    users ||..o{ tasks : \"created_by\"\n    projects ||..o{ tasks : \"project_id\"\n    tasks ||..o{ comments : \"task_id\"\n", "users": "erDiagram\n    users {\n        bigint id PK\n        varchar(320) email UK\n        text display_name\n        text password_hash\n        boolean is_verified\n        timestamptz created_at\n        timestamptz deleted_at\n    }\n    audit_events\n    comments\n    memberships\n    tasks\n    users |o..o{ audit_events : \"actor_id\"\n    users ||..o{ comments : \"author_id\"\n    users ||--o{ memberships : \"user_id\"\n    users |o..o{ tasks : \"assignee_id\"\n    users ||..o{ tasks : \"created_by\"\n"}}</script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+const diagrams = JSON.parse(document.getElementById("diagrams").textContent);
+const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+mermaid.initialize({ startOnLoad: false, theme: dark ? "dark" : "default", maxTextSize: 900000,
+  er: { useMaxWidth: false }, securityLevel: "strict" });
+const viewport = document.getElementById("viewport");
+const canvas = document.getElementById("canvas");
+let scale = 1, x = 0, y = 0, counter = 0;
+const apply = () => { canvas.style.transform = `translate(${x}px, ${y}px) scale(${scale})`; };
+function fit() {
+  const svg = canvas.querySelector("svg");
+  if (!svg) return;
+  const box = svg.getBoundingClientRect();
+  const w = box.width / scale, h = box.height / scale;
+  scale = Math.min(viewport.clientWidth / w, viewport.clientHeight / h, 1.5) * 0.95;
+  x = (viewport.clientWidth - w * scale) / 2; y = (viewport.clientHeight - h * scale) / 2;
+  apply();
+}
+async function show(text, label) {
+  document.getElementById("view-label").textContent = label;
+  try {
+    const { svg } = await mermaid.render(`er${counter++}`, text);
+    canvas.innerHTML = svg;
+    scale = 1; x = 0; y = 0; apply(); fit();
+  } catch (error) {
+    canvas.innerHTML = `<p id="status">Could not render the diagram: ${error.message}</p>`;
+  }
+}
+function focusTable(key) {
+  if (!diagrams.focus[key]) return;
+  document.querySelectorAll("#list li").forEach(li =>
+    li.classList.toggle("active", li.querySelector("a").dataset.focus === key));
+  show(diagrams.focus[key], `${key} and its neighbours`);
+}
+document.addEventListener("click", event => {
+  const target = event.target.closest("[data-focus]");
+  if (target) focusTable(target.dataset.focus);
+});
+document.getElementById("show-all").onclick = () => {
+  document.querySelectorAll("#list li").forEach(li => li.classList.remove("active"));
+  show(diagrams.overview, "All tables");
+};
+document.getElementById("zoom-in").onclick = () => { scale *= 1.2; apply(); };
+document.getElementById("zoom-out").onclick = () => { scale /= 1.2; apply(); };
+document.getElementById("fit").onclick = fit;
+viewport.addEventListener("wheel", event => {
+  event.preventDefault();
+  const rect = viewport.getBoundingClientRect();
+  const px = event.clientX - rect.left, py = event.clientY - rect.top;
+  const factor = event.deltaY < 0 ? 1.1 : 1 / 1.1;
+  x = px - (px - x) * factor; y = py - (py - y) * factor; scale *= factor; apply();
+}, { passive: false });
+let drag = null;
+viewport.addEventListener("pointerdown", event => {
+  drag = { px: event.clientX, py: event.clientY, x, y };
+  viewport.classList.add("dragging"); viewport.setPointerCapture(event.pointerId);
+});
+viewport.addEventListener("pointermove", event => {
+  if (!drag) return;
+  x = drag.x + event.clientX - drag.px; y = drag.y + event.clientY - drag.py; apply();
+});
+viewport.addEventListener("pointerup", () => { drag = null; viewport.classList.remove("dragging"); });
+document.getElementById("filter").addEventListener("input", event => {
+  const needle = event.target.value.trim().toLowerCase();
+  document.querySelectorAll("#list li").forEach(li =>
+    li.classList.toggle("hidden", !li.textContent.toLowerCase().includes(needle)));
+  document.querySelectorAll(".card").forEach(card =>
+    card.classList.toggle("hidden", !card.dataset.table.toLowerCase().includes(needle)));
+});
+show(diagrams.overview, "All tables");
+</script>
+</body>
+</html>

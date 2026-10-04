@@ -62,6 +62,7 @@ jobs:
     env:
       DR_TEST_POSTGRES_URL: postgresql+psycopg://postgres:postgres@localhost:5432/postgres
       DR_TEST_MYSQL_URL: mysql+pymysql://root:root@127.0.0.1:3306/mysql
+      DR_REQUIRE_LIVE_DB: "1"   # fail rather than skip if a service is down
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -69,3 +70,36 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install -e ".[dev,postgres,mysql]"
       - run: python -m pytest -m "postgres or mysql" -v
+
+  action:
+    # Dogfood the GitHub Action from this checkout on the example project.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        id: docs
+        with:
+          mode: check
+          working-directory: examples/quickstart
+
+  mermaid:
+    # Every diagram we commit must render with the official Mermaid CLI.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: python -m pip install -e .
+      - name: Extract diagrams from generated docs
+        run: python scripts/extract_mermaid.py mermaid-out examples
+      - name: Render each diagram
+        run: |
+          echo '{"args": ["--no-sandbox"]}' > puppeteer.json
+          for file in mermaid-out/*.mmd; do
+            echo "rendering $file"
+            npx -y @mermaid-js/mermaid-cli@11 -p puppeteer.json -q -i "$file" -o "${file%.mmd}.svg"
+          done

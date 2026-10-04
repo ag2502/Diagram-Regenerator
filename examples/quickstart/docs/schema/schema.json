@@ -1,0 +1,579 @@
+{
+  "format": "diagram-regenerator/schema@1",
+  "dialect": "postgresql",
+  "tables": {
+    "audit_events": {
+      "name": "audit_events",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "autoincrement": true
+        },
+        {
+          "name": "organization_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "actor_id",
+          "type": "bigint",
+          "nullable": true
+        },
+        {
+          "name": "action",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "payload",
+          "type": "jsonb",
+          "nullable": false,
+          "default": "'{}'"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "default": "current_timestamp"
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "columns": [
+            "actor_id"
+          ],
+          "ref_table": "users",
+          "ref_columns": [
+            "id"
+          ],
+          "name": "audit_events_actor_id_fkey",
+          "on_delete": "SET NULL"
+        },
+        {
+          "columns": [
+            "organization_id"
+          ],
+          "ref_table": "organizations",
+          "ref_columns": [
+            "id"
+          ],
+          "name": "audit_events_organization_id_fkey",
+          "on_delete": "CASCADE"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "organization_id",
+            "created_at"
+          ],
+          "unique": false,
+          "name": "ix_audit_org_created"
+        }
+      ]
+    },
+    "comments": {
+      "name": "comments",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "autoincrement": true
+        },
+        {
+          "name": "task_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "author_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "body",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "default": "current_timestamp"
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "columns": [
+            "author_id"
+          ],
+          "ref_table": "users",
+          "ref_columns": [
+            "id"
+          ],
+          "name": "comments_author_id_fkey"
+        },
+        {
+          "columns": [
+            "task_id"
+          ],
+          "ref_table": "tasks",
+          "ref_columns": [
+            "id"
+          ],
+          "name": "comments_task_id_fkey",
+          "on_delete": "CASCADE"
+        }
+      ],
+      "indexes": []
+    },
+    "invoices": {
+      "name": "invoices",
+      "comment": "One row per billing period, mirrored from Stripe.",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "autoincrement": true
+        },
+        {
+          "name": "subscription_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "amount_cents",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "currency",
+          "type": "char(3)",
+          "nullable": false,
+          "default": "'USD'"
+        },
+        {
+          "name": "issued_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "paid_at",
+          "type": "timestamptz",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "columns": [
+            "subscription_id"
+          ],
+          "ref_table": "subscriptions",
+          "ref_columns": [
+            "id"
+          ],
+          "name": "invoices_subscription_id_fkey"
+        }
+      ],
+      "indexes": []
+    },
+    "memberships": {
+      "name": "memberships",
+      "columns": [
+        {
+          "name": "organization_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "role",
+          "type": "member_role",
+          "nullable": false,
+          "default": "'member'"
+        },
+        {
+          "name": "joined_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "default": "current_timestamp"
+        }
+      ],
+      "primary_key": [
+        "organization_id",
+        "user_id"
+      ],
+      "foreign_keys": [
+        {
+          "columns": [
+            "organization_id"
+          ],
+          "ref_table": "organizations",
+          "ref_columns": [
+            "id"
+          ],
+          "name": "memberships_organization_id_fkey",
+          "on_delete": "CASCADE"
+        },
+        {
+          "columns": [
+            "user_id"
+          ],
+          "ref_table": "users",
+          "ref_columns": [
+            "id"
+          ],
+          "name": "memberships_user_id_fkey",
+          "on_delete": "CASCADE"
+        }
+      ],
+      "indexes": []
+    },
+    "organizations": {
+      "name": "organizations",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "autoincrement": true
+        },
+        {
+          "name": "slug",
+          "type": "varchar(64)",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "default": "current_timestamp"
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "slug"
+          ],
+          "unique": true,
+          "name": "organizations_slug_key"
+        }
+      ]
+    },
+    "projects": {
+      "name": "projects",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "autoincrement": true
+        },
+        {
+          "name": "organization_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "archived_at",
+          "type": "timestamptz",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "default": "current_timestamp"
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "columns": [
+            "organization_id"
+          ],
+          "ref_table": "organizations",
+          "ref_columns": [
+            "id"
+          ],
+          "name": "projects_organization_id_fkey",
+          "on_delete": "CASCADE"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "organization_id"
+          ],
+          "unique": false,
+          "name": "ix_projects_org"
+        }
+      ]
+    },
+    "subscriptions": {
+      "name": "subscriptions",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "autoincrement": true
+        },
+        {
+          "name": "organization_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "stripe_customer_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "seats",
+          "type": "integer",
+          "nullable": false,
+          "default": "1"
+        },
+        {
+          "name": "renews_on",
+          "type": "date",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "columns": [
+            "organization_id"
+          ],
+          "ref_table": "organizations",
+          "ref_columns": [
+            "id"
+          ],
+          "name": "subscriptions_organization_id_fkey"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "organization_id"
+          ],
+          "unique": true,
+          "name": "subscriptions_organization_id_key"
+        }
+      ]
+    },
+    "tasks": {
+      "name": "tasks",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "autoincrement": true
+        },
+        {
+          "name": "project_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "task_status",
+          "nullable": false,
+          "default": "'todo'"
+        },
+        {
+          "name": "assignee_id",
+          "type": "bigint",
+          "nullable": true
+        },
+        {
+          "name": "created_by",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "due_on",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "priority",
+          "type": "smallint",
+          "nullable": false,
+          "default": "2"
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "columns": [
+            "assignee_id"
+          ],
+          "ref_table": "users",
+          "ref_columns": [
+            "id"
+          ],
+          "name": "tasks_assignee_id_fkey",
+          "on_delete": "SET NULL"
+        },
+        {
+          "columns": [
+            "created_by"
+          ],
+          "ref_table": "users",
+          "ref_columns": [
+            "id"
+          ],
+          "name": "tasks_created_by_fkey"
+        },
+        {
+          "columns": [
+            "project_id"
+          ],
+          "ref_table": "projects",
+          "ref_columns": [
+            "id"
+          ],
+          "name": "tasks_project_id_fkey",
+          "on_delete": "CASCADE"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "project_id",
+            "status"
+          ],
+          "unique": false,
+          "name": "ix_tasks_project_status"
+        }
+      ]
+    },
+    "users": {
+      "name": "users",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "autoincrement": true
+        },
+        {
+          "name": "email",
+          "type": "varchar(320)",
+          "nullable": false
+        },
+        {
+          "name": "display_name",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "password_hash",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "is_verified",
+          "type": "boolean",
+          "nullable": false,
+          "default": "false"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "default": "current_timestamp"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamptz",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "email"
+          ],
+          "unique": true,
+          "name": "users_email_key"
+        }
+      ]
+    }
+  },
+  "enums": {
+    "member_role": [
+      "owner",
+      "admin",
+      "member"
+    ],
+    "task_status": [
+      "todo",
+      "in_progress",
+      "done"
+    ]
+  }
+}

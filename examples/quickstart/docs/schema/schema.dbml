@@ -1,0 +1,119 @@
+Enum member_role {
+  owner
+  admin
+  member
+}
+
+Enum task_status {
+  todo
+  in_progress
+  done
+}
+
+Table audit_events [note: 'Append-only log of security-relevant actions, kept for 400 days.'] {
+  id bigint [pk, increment, note: 'Primary key.']
+  organization_id bigint [not null, note: 'Organization the event belongs to; events are deleted with it.']
+  actor_id bigint [note: 'User who performed the action; NULL for system jobs or deleted users.']
+  action text [not null, note: 'Dotted event name, e.g. member.invited or project.archived.']
+  payload jsonb [not null, default: '{}', note: 'Event-specific details as JSON; never contains secrets.']
+  created_at timestamptz [not null, default: `current_timestamp`, note: 'When the action happened.']
+
+  indexes {
+    (organization_id, created_at) [name: 'ix_audit_org_created']
+  }
+}
+
+Table comments [note: 'Discussion on a task, newest last.'] {
+  id bigint [pk, increment, note: 'Primary key.']
+  task_id bigint [not null, note: 'Task being discussed; comments are deleted with it.']
+  author_id bigint [not null, note: 'User who wrote the comment.']
+  body text [not null, note: 'Comment text in Markdown.']
+  created_at timestamptz [not null, default: `current_timestamp`, note: 'When the comment was posted.']
+}
+
+Table invoices [note: 'One row per billing period, mirrored from Stripe.'] {
+  id bigint [pk, increment, note: 'Primary key.']
+  subscription_id bigint [not null, note: 'Subscription this invoice bills.']
+  amount_cents integer [not null, note: 'Total charged, in the smallest unit of the currency.']
+  currency char(3) [not null, default: 'USD', note: 'ISO 4217 currency code.']
+  issued_at timestamptz [not null, default: `current_timestamp`, note: 'When Stripe issued the invoice.']
+  paid_at timestamptz [note: 'When payment succeeded; NULL while unpaid.']
+}
+
+Table memberships [note: 'Which users belong to which organizations, and their role there.'] {
+  organization_id bigint [note: 'Organization joined; memberships are deleted with it.']
+  user_id bigint [note: 'Member; memberships are deleted with the user.']
+  role member_role [not null, default: 'member', note: 'Permission level inside the organization.']
+  joined_at timestamptz [not null, default: `current_timestamp`, note: 'When the user accepted the invitation.']
+
+  indexes {
+    (organization_id, user_id) [pk]
+  }
+}
+
+Table organizations [note: 'Customer workspaces; every project and subscription belongs to one.'] {
+  id bigint [pk, increment, note: 'Primary key.']
+  slug varchar(64) [not null, unique, note: 'Unique URL name, e.g. acme in app.example.com/acme.']
+  name text [not null, note: 'Display name shown in the app.']
+  created_at timestamptz [not null, default: `current_timestamp`, note: 'When the organization was created.']
+}
+
+Table projects {
+  id bigint [pk, increment, note: 'Primary key.']
+  organization_id bigint [not null, note: 'Owning organization; projects are deleted with it.']
+  name text [not null, note: 'Project name, unique per organization by convention only.']
+  archived_at timestamptz [note: 'When the project was archived; NULL while active.']
+  created_at timestamptz [not null, default: `current_timestamp`, note: 'When the project was created.']
+
+  indexes {
+    (organization_id) [name: 'ix_projects_org']
+  }
+}
+
+Table subscriptions [note: 'The paid plan of an organization (at most one each).'] {
+  id bigint [pk, increment, note: 'Primary key.']
+  organization_id bigint [not null, unique, note: 'Subscribing organization.']
+  stripe_customer_id text [not null, note: 'Stripe customer ID (cus_...).']
+  seats integer [not null, default: 1, note: 'Number of paid seats.']
+  renews_on date [note: 'Next renewal date; NULL when the plan is cancelled.']
+}
+
+Table tasks [note: 'Units of work inside a project.'] {
+  id bigint [pk, increment, note: 'Primary key.']
+  project_id bigint [not null, note: 'Project the task belongs to; tasks are deleted with it.']
+  title text [not null, note: 'Short summary shown on the board.']
+  status task_status [not null, default: 'todo', note: 'Board column the task is in.']
+  assignee_id bigint [note: '[draft] References users.id; cleared when it is deleted.']
+  created_by bigint [not null, note: 'User who created the task.']
+  created_at timestamptz [not null, default: `current_timestamp`, note: 'When the task was created.']
+  updated_at timestamptz [not null, default: `current_timestamp`, note: '[draft] When the task was last updated.']
+  due_on date [note: 'Deadline; NULL when there is none.']
+  priority smallint [not null, default: 2, note: '1 (urgent) to 4 (someday); 2 is the default.']
+
+  indexes {
+    (project_id, status) [name: 'ix_tasks_project_status']
+  }
+}
+
+Table users [note: 'People who can sign in.'] {
+  id bigint [pk, increment, note: 'Primary key.']
+  email varchar(320) [not null, unique, note: 'Sign-in address; unique across all users.']
+  display_name text [not null, note: 'Name shown to teammates.']
+  password_hash text [not null, note: 'Argon2id hash of the password.']
+  is_verified boolean [not null, default: false, note: 'Whether the email address has been confirmed.']
+  created_at timestamptz [not null, default: `current_timestamp`, note: 'When the account was created.']
+  deleted_at timestamptz [note: 'When the account was deleted; NULL while active (soft delete).']
+}
+
+Ref: audit_events.actor_id > users.id [delete: set null]
+Ref: audit_events.organization_id > organizations.id [delete: cascade]
+Ref: comments.author_id > users.id
+Ref: comments.task_id > tasks.id [delete: cascade]
+Ref: invoices.subscription_id > subscriptions.id
+Ref: memberships.organization_id > organizations.id [delete: cascade]
+Ref: memberships.user_id > users.id [delete: cascade]
+Ref: projects.organization_id > organizations.id [delete: cascade]
+Ref: subscriptions.organization_id - organizations.id
+Ref: tasks.assignee_id > users.id [delete: set null]
+Ref: tasks.created_by > users.id
+Ref: tasks.project_id > projects.id [delete: cascade]

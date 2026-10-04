@@ -103,6 +103,13 @@ MYSQL_MIGRATIONS = {
 }
 
 
+def _unavailable(reason: str):
+    """Skip locally; fail in CI (DR_REQUIRE_LIVE_DB=1) so a dead service can't pass silently."""
+    if os.environ.get("DR_REQUIRE_LIVE_DB"):
+        pytest.fail(f"live database required but unavailable: {reason}")
+    pytest.skip(reason)
+
+
 def _scratch_database(server_url: str, dialect: str):
     """Create an empty database on the server; returns (url, drop callback)."""
     name = f"dr_{uuid.uuid4().hex[:10]}"
@@ -144,9 +151,10 @@ def postgres_server(tmp_path_factory):
     if url:
         yield url
         return
-    pgserver = pytest.importorskip(
-        "pgserver", reason="set DR_TEST_POSTGRES_URL or install pgserver"
-    )
+    try:
+        import pgserver
+    except ImportError:
+        _unavailable("set DR_TEST_POSTGRES_URL or install pgserver")
     server = pgserver.get_server(tmp_path_factory.mktemp("pg"), cleanup_mode="stop")
     yield server.get_uri()
     server.cleanup()
@@ -163,7 +171,7 @@ def postgres_db(postgres_server):
 def mysql_db():
     url = os.environ.get("DR_TEST_MYSQL_URL")
     if not url:
-        pytest.skip("set DR_TEST_MYSQL_URL to run MySQL tests")
+        _unavailable("set DR_TEST_MYSQL_URL to run MySQL tests")
     url, drop = _scratch_database(url, "mysql")
     yield url
     drop()
