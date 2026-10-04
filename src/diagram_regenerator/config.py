@@ -57,6 +57,7 @@ class OutputConfig:
     diagram: str = "auto"
     layout: str | None = None
     comments_in_diagram: bool = True
+    source_label: str | None = None  # how docs name the source, e.g. "Production"
 
     def files(self) -> dict[str, str]:
         """format -> path for every output that is switched on."""
@@ -232,6 +233,7 @@ def parse_config(data: dict[str, Any], root: Path, path: Path | None = None) -> 
         raise ConfigError("output.diagram must be auto, all, keys or none")
     out.layout = output.get("layout") or None
     out.comments_in_diagram = bool(output.get("comments_in_diagram", True))
+    out.source_label = output.get("source_label") or None
     config.output = out
 
     groups = data.get("groups", {})

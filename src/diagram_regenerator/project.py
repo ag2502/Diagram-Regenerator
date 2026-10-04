@@ -139,7 +139,7 @@ class Project:
         output = self.config.output
         return MarkdownOptions(
             title=output.title,
-            source=source_label or self.describe(),
+            source=source_label or output.source_label or self.describe(),
             diagram=output.diagram,
             comments_in_diagram=output.comments_in_diagram,
             layout=output.layout,

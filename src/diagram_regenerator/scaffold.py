@@ -106,6 +106,7 @@ markdown = "{out_dir}/README.md"     # Mermaid ER diagram + data dictionary
 # mermaid = "{out_dir}/schema.mmd"
 title = "{title}"
 diagram = "auto"                     # auto | all | keys | none
+# source_label = "Production"        # how the docs name the source
 
 # Focused diagrams for areas of a big schema.
 # [groups]
