@@ -1,0 +1,136 @@
+name: Diagram Regenerator
+description: Always-current database schema diagrams, PR schema diffs with risk ratings, and drift alerts.
+author: Amogh Gaikwad
+branding:
+  icon: database
+  color: blue
+
+inputs:
+  mode:
+    description: >
+      pr: diff the PR against its base branch, comment, and gate on risk.
+      update: regenerate the docs and commit them (use on pushes to the default branch).
+      drift: compare live environments with the baseline and alert Slack.
+      check: fail when the committed docs are stale.
+    required: true
+    default: pr
+  config:
+    description: "Path to diagram-regen.toml (default: found automatically)."
+    default: ""
+  working-directory:
+    description: Directory to run in.
+    default: "."
+  base:
+    description: "pr mode: ref to compare against (default: origin/<PR target branch>)."
+    default: ""
+  fail-on:
+    description: "pr mode: breaking | warning | any | never (default: diff.fail_on in the config)."
+    default: ""
+  comment:
+    description: "pr mode: post or update a PR comment."
+    default: "true"
+  commit:
+    description: "update mode: commit and push regenerated docs."
+    default: "true"
+  commit-message:
+    description: "update mode: commit message; {datetime} {date} {summary} {fingerprint} are filled in."
+    default: "Regenerate database schema docs\\n\\n{summary}"
+  commit-user-name:
+    description: "update mode: commit author name."
+    default: ${{ github.actor }}
+  commit-user-email:
+    description: "update mode: commit author email."
+    default: ${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com
+  slack-webhook:
+    description: Slack incoming-webhook URL for drift alerts (and schema-change notices in update mode).
+    default: ""
+  extras:
+    description: "Optional dependencies to install: postgres, mysql, llm (comma-separated)."
+    default: ""
+  python-version:
+    description: Python used to run the tool.
+    default: "3.12"
+  github-token:
+    description: Token for PR comments.
+    default: ${{ github.token }}
+
+outputs:
+  changed:
+    description: "pr/update: whether the schema (or its docs) changed."
+    value: ${{ steps.run.outputs.changed }}
+  breaking:
+    description: "pr: number of breaking changes."
+    value: ${{ steps.run.outputs.breaking }}
+  drift:
+    description: "drift: whether any environment differs."
+    value: ${{ steps.run.outputs.drift }}
+  summary:
+    description: One-line summary of the result.
+    value: ${{ steps.run.outputs.summary }}
+  commit:
+    description: "update: short SHA of the docs commit, if one was made."
+    value: ${{ steps.run.outputs.commit }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install diagram-regenerator
+      shell: bash
+      env:
+        DR_EXTRAS: ${{ inputs.extras }}
+      run: |
+        target="$GITHUB_ACTION_PATH"
+        if [ -n "$DR_EXTRAS" ]; then target="$target[$(echo "$DR_EXTRAS" | tr -d ' ')]"; fi
+        python -m pip install --quiet --disable-pip-version-check "$target"
+
+    - name: Run diagram-regen (${{ inputs.mode }})
+      id: run
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        DR_MODE: ${{ inputs.mode }}
+        DR_CONFIG: ${{ inputs.config }}
+        DR_BASE: ${{ inputs.base }}
+        DR_FAIL_ON: ${{ inputs.fail-on }}
+        DR_COMMENT: ${{ inputs.comment }}
+        DR_COMMIT: ${{ inputs.commit }}
+        DR_MESSAGE: ${{ inputs.commit-message }}
+        DR_COMMIT_USER_NAME: ${{ inputs.commit-user-name }}
+        DR_COMMIT_USER_EMAIL: ${{ inputs.commit-user-email }}
+        DR_SLACK: ${{ inputs.slack-webhook }}
+      run: |
+        common=(--no-color)
+        if [ -n "$DR_CONFIG" ]; then common+=(--config "$DR_CONFIG"); fi
+        if [ -n "$DR_SLACK" ]; then export SLACK_WEBHOOK_URL="$DR_SLACK"; fi
+        case "$DR_MODE" in
+          pr)
+            args=()
+            if [ -n "$DR_BASE" ]; then args+=(--base "$DR_BASE"); fi
+            if [ -n "$DR_FAIL_ON" ]; then args+=(--fail-on "$DR_FAIL_ON"); fi
+            if [ "$DR_COMMENT" != "true" ]; then args+=(--no-comment); fi
+            diagram-regen ci pr "${common[@]}" "${args[@]}"
+            ;;
+          update)
+            args=(--message "$DR_MESSAGE")
+            if [ "$DR_COMMIT" = "true" ]; then args+=(--commit --push); fi
+            if [ -n "$DR_SLACK" ]; then args+=(--slack); fi
+            diagram-regen ci update "${common[@]}" "${args[@]}"
+            ;;
+          drift)
+            args=()
+            if [ -n "$DR_SLACK" ]; then args+=(--slack); fi
+            diagram-regen ci drift "${common[@]}" "${args[@]}"
+            ;;
+          check)
+            diagram-regen check "${common[@]}"
+            ;;
+          *)
+            echo "::error::unknown mode '$DR_MODE' (expected pr, update, drift or check)"
+            exit 2
+            ;;
+        esac

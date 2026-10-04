@@ -90,6 +90,7 @@ def cmd_init(args: argparse.Namespace) -> int:
         step += 1
     print(f"  {step}. diagram-regen generate        # write the diagram and snapshot")
     print(f"  {step + 1}. git add {args.output_dir} {path.name} && git commit")
+    print(f"  {step + 2}. diagram-regen init-ci         # PR comments + docs that update on merge")
     return EXIT_OK
 
 
@@ -167,20 +168,19 @@ def cmd_diff(args: argparse.Namespace) -> int:
     return EXIT_FAIL if _fails(diff, args.fail_on or config.fail_on) else EXIT_OK
 
 
-def cmd_drift(args: argparse.Namespace) -> int:
-    from diagram_regenerator.drift import (
-        detect_drift,
-        format_drift_json,
-        format_drift_markdown,
-        format_drift_text,
-    )
-    from diagram_regenerator.notify import NotifyError, ci_run_url, drift_message, post_slack
+def build_drift_report(
+    project: Project,
+    env_args: list[str] | None = None,
+    baseline: str | None = None,
+    extra_ignore: list[str] | None = None,
+):
+    """Resolve environments and baseline from flags/config and diff them."""
+    from diagram_regenerator.drift import detect_drift
 
-    project = _project(args)
     config = project.config
-    if args.env:
+    if env_args:
         specs = {}
-        for item in args.env:
+        for item in env_args:
             name, _, spec = item.partition("=")
             if not name or not spec:
                 raise CommandError(f"--env expects NAME=SOURCE, got {item!r}")
@@ -193,7 +193,7 @@ def cmd_drift(args: argparse.Namespace) -> int:
             "or pass --env NAME=URL (repeatable)"
         )
 
-    baseline = args.baseline or config.drift_baseline
+    baseline = baseline or config.drift_baseline
     if baseline == "source":
         baseline_schema, baseline_label = project.load(), project.describe()
     elif baseline in specs:
@@ -204,9 +204,37 @@ def cmd_drift(args: argparse.Namespace) -> int:
         raise CommandError("nothing to compare: the baseline was the only environment")
 
     loaders = {name: (lambda spec=spec: project.load(spec)) for name, spec in specs.items()}
-    ignore = sorted(set(config.drift_ignore) | set(args.ignore or []))
-    report = detect_drift(baseline_label, baseline_schema, loaders, ignore=ignore)
+    ignore = sorted(set(config.drift_ignore) | set(extra_ignore or []))
+    return detect_drift(baseline_label, baseline_schema, loaders, ignore=ignore)
 
+
+def notify_drift(project: Project, report, webhook: str | None, always: bool = False) -> None:
+    from diagram_regenerator.notify import NotifyError, ci_run_url, drift_message, post_slack
+
+    webhook = webhook or project.config.webhook() or os.environ.get("SLACK_WEBHOOK_URL")
+    if not webhook:
+        raise CommandError(
+            "--slack needs a webhook: set notify.slack_webhook, SLACK_WEBHOOK_URL "
+            "or --slack-webhook"
+        )
+    if report.has_drift or always:
+        try:
+            post_slack(webhook, drift_message(report, link=ci_run_url()))
+            print("notified Slack", file=sys.stderr)
+        except NotifyError as exc:
+            print(f"warning: {exc}", file=sys.stderr)
+
+
+def cmd_drift(args: argparse.Namespace) -> int:
+    from diagram_regenerator.drift import (
+        format_drift_json,
+        format_drift_markdown,
+        format_drift_text,
+    )
+    from diagram_regenerator.notify import ci_run_url
+
+    project = _project(args)
+    report = build_drift_report(project, args.env, args.baseline, args.ignore)
     if args.format == "json":
         text = format_drift_json(report)
     elif args.format == "markdown":
@@ -215,20 +243,8 @@ def cmd_drift(args: argparse.Namespace) -> int:
     else:
         text = format_drift_text(report)
     _write_or_print(text, args.output)
-
     if args.slack or args.slack_webhook:
-        webhook = args.slack_webhook or config.webhook() or os.environ.get("SLACK_WEBHOOK_URL")
-        if not webhook:
-            raise CommandError(
-                "--slack needs a webhook: set notify.slack_webhook, SLACK_WEBHOOK_URL "
-                "or --slack-webhook"
-            )
-        if report.has_drift or args.notify_always:
-            try:
-                post_slack(webhook, drift_message(report, link=ci_run_url()))
-                print("notified Slack", file=sys.stderr)
-            except NotifyError as exc:
-                print(f"warning: {exc}", file=sys.stderr)
+        notify_drift(project, report, args.slack_webhook, args.notify_always)
     return EXIT_FAIL if report.has_drift and not args.no_fail else EXIT_OK
 
 
@@ -317,6 +333,19 @@ def cmd_describe(args: argparse.Namespace) -> int:
             "`diagram-regen generate`."
         )
     return EXIT_OK
+
+
+def cmd_ci(args: argparse.Namespace) -> int:
+    from diagram_regenerator import ci
+
+    runners = {"pr": ci.run_pr, "update": ci.run_update, "drift": ci.run_drift}
+    return runners[args.ci_command](args, _project(args))
+
+
+def cmd_init_ci(args: argparse.Namespace) -> int:
+    from diagram_regenerator import ci
+
+    return ci.run_init_ci(args, _project(args))
 
 
 def cmd_render(args: argparse.Namespace) -> int:
@@ -453,6 +482,54 @@ def build_parser() -> argparse.ArgumentParser:
     describe.add_argument("--redraft", action="store_true", help="regenerate existing drafts too")
     describe.add_argument("--dry-run", action="store_true", help="don't write the file")
     describe.set_defaults(handler=cmd_describe)
+
+    init_ci = commands.add_parser(
+        "init-ci",
+        parents=[common],
+        help="write GitHub Actions workflows (PR comments, auto-update, drift checks)",
+    )
+    init_ci.add_argument("--branch", default="main", help="branch whose docs stay current")
+    init_ci.add_argument("--drift", action="store_true", help="also add a scheduled drift check")
+    init_ci.add_argument("--action", default=None, help="action reference (default: this version)")
+    init_ci.add_argument("--force", action="store_true", help="overwrite existing workflows")
+    init_ci.set_defaults(handler=cmd_init_ci, source=None)
+
+    ci = commands.add_parser("ci", help="pipeline steps used by the GitHub Action (any CI works)")
+    ci_commands = ci.add_subparsers(dest="ci_command", metavar="STEP", required=True)
+    ci_pr = ci_commands.add_parser(
+        "pr",
+        parents=[common, with_source],
+        help="diff the branch against its base, comment on the PR, gate on risk",
+    )
+    ci_pr.add_argument("--base", help="base ref (default: origin/<PR target branch>)")
+    ci_pr.add_argument(
+        "--no-comment", dest="comment", action="store_false", help="skip the PR comment"
+    )
+    ci_pr.add_argument(
+        "--fail-on", choices=FAIL_LEVELS, help="exit 1 at this severity (default: config)"
+    )
+    ci_pr.set_defaults(handler=cmd_ci)
+    ci_update = ci_commands.add_parser(
+        "update", parents=[common, with_source], help="regenerate docs and commit them"
+    )
+    ci_update.add_argument("--commit", action="store_true", help="commit changed docs")
+    ci_update.add_argument("--push", action="store_true", help="push the commit")
+    ci_update.add_argument(
+        "--message",
+        default="Regenerate database schema docs\\n\\n{summary}",
+        help="commit message; {datetime} {date} {summary} {fingerprint} are filled in",
+    )
+    ci_update.add_argument("--author-name", help="commit author name")
+    ci_update.add_argument("--author-email", help="commit author email")
+    ci_update.add_argument("--slack", action="store_true", help="announce schema changes on Slack")
+    ci_update.set_defaults(handler=cmd_ci)
+    ci_drift = ci_commands.add_parser(
+        "drift", parents=[common, with_source], help="drift check with job summary and Slack"
+    )
+    ci_drift.add_argument("--baseline", help="'source' or an environment name")
+    ci_drift.add_argument("--slack", action="store_true", help="post to Slack when drift is found")
+    ci_drift.add_argument("--no-fail", action="store_true", help="exit 0 even when drift is found")
+    ci_drift.set_defaults(handler=cmd_ci)
 
     render_cmd = commands.add_parser(
         "render",
