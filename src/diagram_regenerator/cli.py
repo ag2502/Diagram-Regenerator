@@ -232,6 +232,93 @@ def cmd_drift(args: argparse.Namespace) -> int:
     return EXIT_FAIL if report.has_drift and not args.no_fail else EXIT_OK
 
 
+def cmd_describe(args: argparse.Namespace) -> int:
+    import fnmatch
+
+    from diagram_regenerator.describe import (
+        ClaudeDescriber,
+        DescribeError,
+        HeuristicDescriber,
+        draft_descriptions,
+    )
+    from diagram_regenerator.sources import detect_kind
+
+    project = _project(args)
+    config = project.config
+    schema = project.load()
+    path = config.resolve(config.descriptions)
+    if path is None:
+        raise CommandError("set `descriptions` in the config to say where descriptions live")
+    docs = project.descriptions()
+
+    tables = None
+    if args.table:
+        tables = [
+            key
+            for key, table in schema.tables.items()
+            if any(
+                fnmatch.fnmatchcase(key, p) or fnmatch.fnmatchcase(table.name, p)
+                for p in args.table
+            )
+        ]
+        if not tables:
+            raise CommandError(f"no tables match {', '.join(args.table)}")
+
+    sample_url = None
+    if args.samples:
+        spec = args.samples_from or project.source_spec()
+        if spec.startswith("env:"):
+            spec = config.environment(spec[4:])
+        if detect_kind(spec) != "database":
+            raise CommandError(
+                "--samples reads rows from a live database: use a database source or "
+                "pass --samples-from URL/env:NAME"
+            )
+        sample_url = spec
+        if args.provider == "claude":
+            print(
+                f"Sending up to {args.samples} redacted sample rows per table to the Anthropic API.",
+                file=sys.stderr,
+            )
+
+    try:
+        describer = (
+            HeuristicDescriber()
+            if args.provider == "heuristic"
+            else ClaudeDescriber(model=args.model or config.llm_model)
+        )
+        result = draft_descriptions(
+            schema,
+            docs,
+            describer,
+            tables=tables,
+            redraft=args.redraft,
+            sample_url=sample_url,
+            sample_rows=args.samples,
+        )
+    except DescribeError as exc:
+        raise CommandError(str(exc)) from exc
+
+    target = project.relative(path)
+    if result.added and not args.dry_run:
+        docs.save(path)
+    verb = "Would add" if args.dry_run else "Added"
+    print(f"{verb} {result.added} draft descriptions across {result.tables} tables to {target}.")
+    if result.skipped_tables:
+        print(f"No suggestions for: {', '.join(result.skipped_tables)}")
+    reviewed, drafts, total = docs.coverage(schema)
+    print(f"Coverage: {reviewed} reviewed, {drafts} drafts, {total - reviewed - drafts} missing.")
+    stale = docs.stale(schema)
+    if stale:
+        print(f"Entries for things no longer in the schema: {', '.join(stale)}")
+    if result.added and not args.dry_run:
+        print(
+            f"Review {target}, delete the [draft] prefix from correct entries, then run "
+            "`diagram-regen generate`."
+        )
+    return EXIT_OK
+
+
 def cmd_render(args: argparse.Namespace) -> int:
     project = _project(args)
     schema = project.load(args.target) if args.target else project.load()
@@ -337,6 +424,35 @@ def build_parser() -> argparse.ArgumentParser:
     )
     drift.add_argument("--no-fail", action="store_true", help="exit 0 even when drift is found")
     drift.set_defaults(handler=cmd_drift)
+
+    describe = commands.add_parser(
+        "describe",
+        parents=[common, with_source],
+        help="draft missing table and column descriptions (Claude or offline heuristics)",
+        description="Fill gaps in the descriptions file with [draft] entries. Descriptions "
+        "people wrote, and database comments, are never replaced.",
+    )
+    describe.add_argument(
+        "--provider",
+        choices=("claude", "heuristic"),
+        default="claude",
+        help="claude (needs the [llm] extra and an API key) or heuristic (offline)",
+    )
+    describe.add_argument(
+        "--model", help="Claude model (default: config [llm] model or claude-opus-5-5)"
+    )
+    describe.add_argument("--table", action="append", help="only these tables (glob, repeatable)")
+    describe.add_argument(
+        "--samples",
+        type=int,
+        default=0,
+        metavar="N",
+        help="include N redacted sample rows per table as context (off by default)",
+    )
+    describe.add_argument("--samples-from", help="database to sample (default: the source)")
+    describe.add_argument("--redraft", action="store_true", help="regenerate existing drafts too")
+    describe.add_argument("--dry-run", action="store_true", help="don't write the file")
+    describe.set_defaults(handler=cmd_describe)
 
     render_cmd = commands.add_parser(
         "render",
