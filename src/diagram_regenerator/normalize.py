@@ -9,6 +9,7 @@ Normalising both sides keeps diffs about real changes, not spelling.
 from __future__ import annotations
 
 import re
+from decimal import Decimal, InvalidOperation
 
 # Whole-type aliases, matched after lower-casing and collapsing whitespace.
 _TYPE_ALIASES = {
@@ -122,7 +123,8 @@ def normalize_type(raw: str | None) -> str:
 # --------------------------------------------------------------------------- defaults
 
 _CAST = re.compile(r"::\s*[a-z_][a-z0-9_ ]*(\(\s*\d+(\s*,\s*\d+)?\s*\))?(\[\])*", re.IGNORECASE)
-_NUMBER = re.compile(r"^-?\d+(\.\d+)?$")
+# A number as written by a database: no leading zeros ("007" stays a string).
+_NUMBER = re.compile(r"^-?(0|[1-9]\d*)(\.\d+)?$")
 _NOW_SPELLINGS = {
     "now()",
     "current_timestamp()",
@@ -180,5 +182,18 @@ def normalize_default(raw: object) -> str | None:
     if text in _NOW_SPELLINGS:
         return "current_timestamp"
     if text.startswith("'") and text.endswith("'") and _NUMBER.match(text[1:-1]):
-        return text[1:-1]
+        text = text[1:-1]
+    if _NUMBER.match(text):
+        return _canonical_number(text)
     return text
+
+
+def _canonical_number(text: str) -> str:
+    """``0.00`` -> ``0``, ``1.50`` -> ``1.5`` (MySQL pads DECIMAL defaults)."""
+    try:
+        value = Decimal(text)
+    except InvalidOperation:
+        return text
+    if value == value.to_integral_value():
+        return str(int(value))
+    return format(value.normalize(), "f")

@@ -67,6 +67,10 @@ def test_split_serial():
         ("'It''s'", "'It''s'"),
         ("gen_random_uuid()", "gen_random_uuid()"),
         ("TRUE", "true"),
+        ("'0.00'", "0"),
+        ("1.50", "1.5"),
+        ("-3.0", "-3"),
+        ("'007'", "'007'"),
     ],
 )
 def test_normalize_default(raw, expected):

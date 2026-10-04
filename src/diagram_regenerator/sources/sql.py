@@ -539,6 +539,8 @@ class _Replayer:
             lambda node: node.this if isinstance(node, exp.Cast) else node
         )
         raw = stripped.sql(dialect=self.read)
+        if self.dialect == "mysql" and raw.upper() in {"TRUE", "FALSE"}:
+            raw = "1" if raw.upper() == "TRUE" else "0"  # MySQL stores booleans as 1/0
         if is_sequence_default(raw):
             column.autoincrement = True
             column.default = None
